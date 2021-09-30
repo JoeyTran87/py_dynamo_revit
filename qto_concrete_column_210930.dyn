@@ -1,0 +1,358 @@
+{
+  "Uuid": "68fff81a-bfdc-42a1-afe2-ac72aa8d4feb",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "qto_concrete_column_210930",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "1.GET ALL STRUCTURAL COLUMNS - done\r\n2.FIND EACH COLUMN'S INTERSECT ELEMENTS + JOINED ELEMENTS\r\n3.FILTER INTERSECT ELEMENT (FLOOR, STRUCTURAL BEAM)\r\n4.FIND ONLY ONE LOWEST BOTTOM FACE BEAM\r\n5.SAVE BEAM BOTTOM FACE ELEVATION (BEAM LEVEL) INTO COLUMN\r\n6.CALCULATE VOLUMES: ABOVE BEAM LEVEL, UNDER BEAM LEVEL\r\n7.WRITE BOTH VOLUME TO PARAMTER OF COLUMN (STRING)",
+      "Id": "8352a417394a4f98ab3f82d0cd73e482",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "02034032957b4e029849c87c307d8048",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Revit.Elements.Category.ByName@string",
+      "Id": "417a11f622474bb3b69ca849c1e73b7a",
+      "Inputs": [
+        {
+          "Id": "99b0ffe6333241e1a522dabe997eef2e",
+          "Name": "name",
+          "Description": "The built in category name.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9462818344904604a1f456d840c5d6bf",
+          "Name": "Category",
+          "Description": "Category",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Gets a Revit category by the built-in category name.\n\nCategory.ByName (name: string): Category"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "OST_StructuralColumns",
+      "Id": "823e4a5a014e47baab6a2924ce753efb",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "0f278d095f024cb4834b115adfe8d8ef",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Columns",
+      "Id": "bfebd730f82643b29144764409ca5ddc",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9645ad546fce475e9ca91cb4498490d5",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "DSRevitNodesUI.ElementsOfCategory, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "Id": "461eaf93e2f74bc7a7acc4c4ac73c0ad",
+      "Inputs": [
+        {
+          "Id": "06fe465175324b6791b1c2860e451f4e",
+          "Name": "Category",
+          "Description": "The Category",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "864104cce44b428ba606f5eb3f8089b0",
+          "Name": "Elements",
+          "Description": "An element type.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Get all elements of the specified category from the model."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n#----------------------------------------------------------------#\r\n\r\ndebugger = []\r\n\r\ndef calculate_col_vol(column):\t\r\n\tglobal debugger\r\n\tparam_write = column.LookupParameter(param_write_name)\t\r\n\tif param_write.StorageType == StorageType.String:\t\t\r\n\t\tvolume = round(column.LookupParameter(\"Volume\").AsDouble()*0.0283168,3)\t\r\n\t\t\r\n\t\ttry:\t\r\n\t\t\tintersect_elements = []\t\r\n\t\t\tfor cat in cats_2:\r\n\t\t\t\tintersect_elements.extend(collector.OfCategoryId(cat.Id).WherePasses(ElementIntersectsElementFilter(column)))\r\n\t\t\tjoined_elements = [doc.GetElement(i) for i in JGU.GetJoinedElements(doc,column) if doc.GetElement(i).Category.Name in cats]\r\n\t\t\tintersect_elements.extend(joined_elements)\t\t\t\r\n\t\t\televations = [] # Bottom faces elevation\t\t\t\r\n\t\t\tfor e in intersect_elements:\r\n\t\t\t\ttry:\r\n\t\t\t\t\tif e.Category.Name == \"Structural Framing\":\r\n\t\t\t\t\t\televations.append(round(e.LookupParameter(\"Elevation at Bottom\").AsDouble()*304.8))\r\n\t\t\t\texcept Exception as ex:\r\n\t\t\t\t\tpass\r\n\t\t\tmin_elevation = min(elevations)\t\t\t\r\n\t\t\t\r\n\t\t\tb_box = column.get_BoundingBox(doc.ActiveView)\r\n\t\t\te_max = round(b_box.Max.Z * 304.8)\r\n\t\t\te_min = round(b_box.Min.Z * 304.8)\t\t\r\n\t\t\tabove_volume = round(((e_max - min_elevation)/((e_max - min_elevation)+(min_elevation - e_min))) * volume,3)\r\n\t\t\tunder_volume = volume - above_volume\t\t\r\n\t\t\tparam_write.Set(\"{0};{1}\".format(above_volume,under_volume))#f\"{above_volume};{under_volume}\"))\t\r\n\t\t\treturn 1\r\n\t\texcept Exception as ex:\r\n\t\t\tparam_write.Set(str(volume))\r\n\t\t\treturn 0\r\n\telse:\r\n\t\treturn 0\r\n#----------------------------------------------------------------#\r\n\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\n\r\ncolumns = UnwrapElement(IN[0])\r\ncats = IN[1].splitlines()\r\nparam_write_name = IN[2]\r\n\r\ncategories = doc.Settings.Categories\r\ncats_2 = []\r\nfor cat in categories:\r\n\tif cat.Name in cats:\r\n\t\tcats_2.append(cat)\r\n\telse:\r\n\t\tpass\r\ncollector = FilteredElementCollector(doc)\r\n\r\ncount = 0\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\n\r\nfor column in columns:\r\n\t count += calculate_col_vol(column)\r\n\r\nTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\r\n# OfCategoryId(cat.Id).\r\n# Assign your output to the OUT variable.\r\nOUT = \"{0} / {1} Succeeded Calculated and write to their parameter\".format(count,len(columns))",
+      "VariableInputPorts": true,
+      "Id": "336c3c307def420580035fa0d62cc101",
+      "Inputs": [
+        {
+          "Id": "513f2c44dcbf4dc0ac033d326702356a",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "87217c15667c4de3888c47600216cae0",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "30152f6c1f0e40a0a852d29c26761b2c",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e7269fa27d454332a29186ecd9f758e2",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Floors\r\nStructural Framing",
+      "Id": "c9b017dbf46b4f9d9938225de7c844f3",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "7079cda3505543159a88acb9602ea8b9",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Comments",
+      "Id": "f37cc8a77a8a4f918ab820c1f3c505ee",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9fa0e1ff495347e192ec65d0b11e1444",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "9462818344904604a1f456d840c5d6bf",
+      "End": "06fe465175324b6791b1c2860e451f4e",
+      "Id": "84e0d3b3b2864c6f9c126359d0c558f2"
+    },
+    {
+      "Start": "0f278d095f024cb4834b115adfe8d8ef",
+      "End": "99b0ffe6333241e1a522dabe997eef2e",
+      "Id": "22c2a89de54841deb33164a3e3efb826"
+    },
+    {
+      "Start": "864104cce44b428ba606f5eb3f8089b0",
+      "End": "513f2c44dcbf4dc0ac033d326702356a",
+      "Id": "ae5d9f6869644071a6bda418aaa6c946"
+    },
+    {
+      "Start": "7079cda3505543159a88acb9602ea8b9",
+      "End": "87217c15667c4de3888c47600216cae0",
+      "Id": "47303ace0f8940c1bf7819132cdfa22c"
+    },
+    {
+      "Start": "9fa0e1ff495347e192ec65d0b11e1444",
+      "End": "30152f6c1f0e40a0a852d29c26761b2c",
+      "Id": "1f8dead5a3ec4564b77df0656dfa6f42"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "8352a417394a4f98ab3f82d0cd73e482",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 198.05360045354257,
+        "Y": 222.21476651641
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Category.ByName",
+        "Id": "417a11f622474bb3b69ca849c1e73b7a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 523.5,
+        "Y": 107.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "823e4a5a014e47baab6a2924ce753efb",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 301.0,
+        "Y": 123.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "bfebd730f82643b29144764409ca5ddc",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 300.0,
+        "Y": 62.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "All Elements of Category",
+        "Id": "461eaf93e2f74bc7a7acc4c4ac73c0ad",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 795.12095937077538,
+        "Y": 56.399050821414676
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "336c3c307def420580035fa0d62cc101",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1150.8909579439005,
+        "Y": 226.82405510354417
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Categories",
+        "Id": "c9b017dbf46b4f9d9938225de7c844f3",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 792.59353847190835,
+        "Y": 344.57920164149897
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Write to Parameter name (string type)",
+        "Id": "f37cc8a77a8a4f918ab820c1f3c505ee",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 696.06398735025778,
+        "Y": 448.72263438282977
+      }
+    ],
+    "Annotations": [],
+    "X": -199.67200741173849,
+    "Y": -233.2405741450907,
+    "Zoom": 1.6102071071861281
+  }
+}
