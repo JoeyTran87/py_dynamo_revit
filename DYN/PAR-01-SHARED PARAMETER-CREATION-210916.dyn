@@ -1,0 +1,445 @@
+{
+  "Uuid": "d644655c-07e1-41a1-ace7-af4ea8aa2bf1",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "_PARAM-SHARED PARAMETER-CREATION-210916",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "377ccb5dba0943cfa96943a7c4460366",
+      "Name": "List Category",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nSpecialty Equipment\r\nCurtain Wall Mullions\r\nCurtain Panels\r\nRoofs\r\nRailings\r\nWindows\r\nDoors",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "b6da09c88b764de797938311f47e96c7",
+      "Name": "Parameter Group",
+      "Type": "string",
+      "Value": "Construction",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "2dc2ff45a49f4e449368f2e0b517c907",
+      "Name": "Filter-Parameter-Start with",
+      "Type": "string",
+      "Value": "COF_",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "69fd3bf086584aff99cae9f66f70758f",
+      "Name": "Do you RENEW parameters?(without keep their value)",
+      "Type": "boolean",
+      "Value": "false",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "b29976630ada44a8ad2ee1e33a9d2592",
+      "Name": "[Help]Parameter Group:",
+      "Type": "string",
+      "Value": "Construction\r\nStructural",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "efed3aadca91453a98f225c8d071ee21",
+      "Name": "Watch",
+      "Type": "unknown",
+      "InitialValue": "",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nfrom Autodesk.Revit.DB.ExternalFileUtils import *\r\nfrom Autodesk.Revit.Creation import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\n## add module director\r\n#ip = \"172.16.2.29\"\r\n#domain = \"hcmcfcfs01\"\r\n#dynPyDir = \"\"\r\n#dynPyDir_ip = \"\\\\\\\\{0}\\\\databim$\\\\BimESC\\\\00-BIM STANDARD\\\\PYTHON\\\\pythondynamo\".format(ip)\r\n#dynPyDir_domain = \"\\\\\\\\{0}\\\\databim$\\\\BimESC\\\\00-BIM STANDARD\\\\PYTHON\\\\pythondynamo\".format(domain)\r\n#if os.path.exists(dynPyDir_domain):\r\n#\tdynPyDir = dynPyDir_domain\t\r\n#if os.path.exists(dynPyDir_ip):\r\n#\tdynPyDir = dynPyDir_ip\t\r\n# dynPyDir = IN[5]\r\n# sys.path.append(dynPyDir)\r\n# import pyDyn\r\n# from pyDyn import *\r\n\r\ndef getParameterDefinitions(app = None,group = None):\r\n    \"\"\"## get share parameter from file\r\n    updated 210916\"\"\"\r\n    paraDefs = []\r\n    paraDefNames = []\r\n    para_dic = {}\r\n\r\n    if app == None:   \r\n        app = DocumentManager.Instance.CurrentUIApplication.Application\r\n    if group == None:\r\n        group = 'COF'    \r\n\t# definition = app.OpenSharedParameterFile()\r\n\t# defGSenum = definition.Groups.GetEnumerator()\r\n    for _,def_group in enumerate(app.OpenSharedParameterFile().Groups.GetEnumerator()):\r\n        if def_group.Name == group: # index 0 : số 0 , index 1 là Definition Group\r\n            definitions = def_group.Definitions\r\n            for de in definitions:\r\n                #str=de.GUID+spbr+de.Name+spbr+de.ParameterType+spbr+de.ParameterGroups+spbr+de.Visible+spbr+de.Description+spbr+de.UserModifiable+spbr+de.HideWhenNoValue # FAIL ParameterGroups\r\n                paraDefs.append(de)\r\n                paraDefNames.append(de.Name)\r\n                para_dic[de.Name] = de\r\n    para_dic_items = sorted(para_dic.items())\r\n    return para_dic_items #[defG for defG in enumerate(app.OpenSharedParameterFile().Groups.GetEnumerator())],paraDefs, paraDefNames,para_dic,\r\n\r\ndef createMultiParameter(doc,para_dic_items,cates, param_group = None,startwith = None,reset = False):\r\n    exceptions = []\r\n    if startwith == None:\r\n        startwith = 'COF'\r\n    if param_group == None or param_group == 'Construction':\r\n        param_group = BuiltInParameterGroup.PG_CONSTRUCTION\r\n    elif param_group == 'Structural':\r\n        param_group = BuiltInParameterGroup.PG_STRUCTURAL\r\n    else:\r\n        param_group = BuiltInParameterGroup.PG_CONSTRUCTION\r\n    \r\n    cats = doc.Settings.Categories\r\n    catset = CategorySet()\r\n    \r\n    for cate in cates:\r\n        try:\r\n            for cat in cats:\r\n                if cat.Name == cate:\r\n                    catset.Insert(cat)\r\n        except Exception as ex:\r\n            pass\r\n    newIB = InstanceBinding(catset)\r\n    \r\n\r\n    TransactionManager.Instance.EnsureInTransaction(doc)\r\n\t\r\n\r\n    if reset == True:\r\n        binding_map =  doc.ParameterBindings\r\n        for dic in para_dic_items:# Case ALL\t\r\n            try:\r\n                if dic[0][:len(startwith)] == startwith:\r\n                    if binding_map.Contains(dic[1]) == True:\r\n                        binding_map.Remove(dic[1])\r\n            except Exception as ex:\r\n            \texceptions.append(ex)\r\n                pass\r\n    if reset == False:\r\n        binding_map =  doc.ParameterBindings\r\n        for dic in para_dic_items:\r\n            try:\r\n                if dic[0][:len(startwith)] == startwith:\r\n                    if binding_map.Contains(dic[1]) == False:\r\n                        binding_map.Insert(dic[1],newIB,param_group)\r\n                    # else:#update by ReInsert\r\n\t                #     binding_map.ReInsert(dic[1],newIB,param_group)\r\n            except Exception as ex:\r\n                exceptions.append(ex)\r\n                pass\r\n        \r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n    return exceptions,para_dic_items,catset#[binding_map.Contains(dic[1]) for dic in para_dic_items]#\r\n\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\t\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\ncates = IN[0].splitlines()\r\nparam_group = IN[1]\r\nstart_with = IN[2]\r\nask_reset = IN[3]\r\n\r\ntry:\r\n\tOUT = createMultiParameter(doc,getParameterDefinitions(app,group = 'COF'),cates,param_group=param_group,startwith=start_with,reset=ask_reset)\r\nexcept Exception as ex:\r\n\tOUT = ex",
+      "VariableInputPorts": true,
+      "Id": "a9dadbb74b91475e9d75232ce5c9252a",
+      "Inputs": [
+        {
+          "Id": "1b6b30dd904645eea46d55e81dd38e9f",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ae38c26d313a4fb9a31dc7a38dc35964",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "f97e92143efc4d98b2fa46c469f3535e",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2550fb8ad8c248748c78beec58f052c7",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "7c96e6bc217e4db48d55e4d768adc5a3",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\n\r\n##\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\n\r\n# Place your code below this line\r\n\r\n\r\nt = Transaction(doc)\r\n\t\r\nt.Start(\"Units setup\")\r\ntry:\r\n\t#Area\r\n\tunit = Units(UnitSystem.Metric)\r\n\r\n\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\r\n\t\r\n\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\t\r\n\tdoc.SetUnits(unit)\r\n\t#Volume\r\n\tunit1 = Units(UnitSystem.Metric)\r\n\r\n\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\r\n\t\r\n\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\r\n\t\r\n\tdoc.SetUnits(unit)\r\n\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\nexcept Exception, e:\r\n\tpass\r\nt.Commit()\r\n\r\n\r\n# Assign your output to the OUT variable.\r\nOUT = 0",
+      "VariableInputPorts": true,
+      "Id": "56c58e3fa1ea47eebc6d7b22a83cff05",
+      "Inputs": [
+        {
+          "Id": "601208b149bf4df897c4956d2e02fc24",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e5276377634c48c9a95a3a177577b88e",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nSpecialty Equipment\r\nCurtain Wall Mullions\r\nCurtain Panels\r\nRoofs\r\nRailings\r\nWindows\r\nDoors",
+      "Id": "377ccb5dba0943cfa96943a7c4460366",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c02a1066f0de4f6f834ea700a1870278",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Construction",
+      "Id": "b6da09c88b764de797938311f47e96c7",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f4b6f025c1ed42589d8b51bb5562215e",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "efed3aadca91453a98f225c8d071ee21",
+      "Inputs": [
+        {
+          "Id": "83fda5ff53194c649bef2d9b9edec741",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8dd6bfa7977b4562aec4e0be64624983",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_",
+      "Id": "2dc2ff45a49f4e449368f2e0b517c907",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c955f3aae9db408f8fded306016e64f1",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "69fd3bf086584aff99cae9f66f70758f",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6633904d032449dcb844a895cdb97e19",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Construction\r\nStructural",
+      "Id": "b29976630ada44a8ad2ee1e33a9d2592",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6d159c4ec16b4a4dbed5c3a99507469d",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "7c96e6bc217e4db48d55e4d768adc5a3",
+      "End": "83fda5ff53194c649bef2d9b9edec741",
+      "Id": "4131dfae6e1b48058e8f5b2d8ffb8cd8"
+    },
+    {
+      "Start": "c02a1066f0de4f6f834ea700a1870278",
+      "End": "1b6b30dd904645eea46d55e81dd38e9f",
+      "Id": "dd08c8028f3b4ecc8a1d44d9ce506ec5"
+    },
+    {
+      "Start": "f4b6f025c1ed42589d8b51bb5562215e",
+      "End": "ae38c26d313a4fb9a31dc7a38dc35964",
+      "Id": "78b15a646e904767a287f39590a6359b"
+    },
+    {
+      "Start": "c955f3aae9db408f8fded306016e64f1",
+      "End": "f97e92143efc4d98b2fa46c469f3535e",
+      "Id": "08f7af475ec64ff4957d9b41b16a1ac7"
+    },
+    {
+      "Start": "6633904d032449dcb844a895cdb97e19",
+      "End": "2550fb8ad8c248748c78beec58f052c7",
+      "Id": "e3d466c97c4c43e6996372909c0c613d"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-CREATE PARAMETERS",
+        "Id": "a9dadbb74b91475e9d75232ce5c9252a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -262.83629063351134,
+        "Y": 598.555757113688
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-unitS",
+        "Id": "56c58e3fa1ea47eebc6d7b22a83cff05",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -184.93751847326513,
+        "Y": 849.75977719793082
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "List Category",
+        "Id": "377ccb5dba0943cfa96943a7c4460366",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -472.6287662218503,
+        "Y": 300.87809387173036
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Group",
+        "Id": "b6da09c88b764de797938311f47e96c7",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -477.14209456898732,
+        "Y": 606.44667218180007
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "efed3aadca91453a98f225c8d071ee21",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "X": -0.59612557688990364,
+        "Y": 523.97869062706513
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Filter-Parameter-Start with",
+        "Id": "2dc2ff45a49f4e449368f2e0b517c907",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -490.39031395972154,
+        "Y": 691.98066849763347
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Do you RENEW parameters?(without keep their value)",
+        "Id": "69fd3bf086584aff99cae9f66f70758f",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -647.94351274343842,
+        "Y": 770.75327126171919
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "[Help]Parameter Group:",
+        "Id": "b29976630ada44a8ad2ee1e33a9d2592",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -464.68984501329265,
+        "Y": 873.55473439431751
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "dd6d57ce0f3f456682c6b63551386601",
+        "Title": "",
+        "Nodes": [
+          "56c58e3fa1ea47eebc6d7b22a83cff05"
+        ],
+        "Left": -194.93751847326513,
+        "Top": 796.75977719793082,
+        "Width": 150.0,
+        "Height": 146.0,
+        "FontSize": 36.0,
+        "InitialTop": 849.75977719793082,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFB9F9E1"
+      },
+      {
+        "Id": "6ded4f2fa4974be4a5fe575687291081",
+        "Title": "",
+        "Nodes": [
+          "a9dadbb74b91475e9d75232ce5c9252a"
+        ],
+        "Left": -272.83629063351134,
+        "Top": 545.555757113688,
+        "Width": 251.0,
+        "Height": 224.0,
+        "FontSize": 36.0,
+        "InitialTop": 598.555757113688,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFFFAA45"
+      }
+    ],
+    "X": 508.9038505588627,
+    "Y": -160.80461058418115,
+    "Zoom": 0.54172563440424415
+  }
+}

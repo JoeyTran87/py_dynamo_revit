@@ -1,0 +1,474 @@
+{
+  "Uuid": "5d7d26de-3417-40f4-b2bb-0ae6ea3c8499",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "_QTO-EXTRACT-VOLUME-FACE AREA-210914",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "f77fa389d7884187afd483226545b3a9",
+      "Name": "(1) Do you select elements manually? if True go (2), False go (3)",
+      "Type": "boolean",
+      "Value": "false",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "83e833a7afc645c5a666d6c1439958df",
+      "Name": "(3) Category Names for selection, then go (4)",
+      "Type": "string",
+      "Value": "Stairs\r\nWalls\r\nFurnitures\r\nStructural Columns",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "5fa96e6dc80549808645a90616b27d8a",
+      "Name": "(4)Do you write elements Parameter VOLUME Value? if True go (5)",
+      "Type": "boolean",
+      "Value": "true",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "5fef90fb955c43c98949ed0a2339c178",
+      "Name": "(5)Volume Parameter Name to Write",
+      "Type": "string",
+      "Value": "COF_GEN__Volume",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "02dc36baff03426bbb6fc39ba4acadce",
+      "Name": "(6)Area Parameter Name to Write",
+      "Type": "string",
+      "Value": "COF_CON__FaceArea_String",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "ef43e0c77c794f83a428eb6d7bf56f3e",
+      "Name": "(7)Seperated Area Parameter Names to Write                        ",
+      "Type": "string",
+      "Value": "COF_CON__FaceArea_Hoz_Top\r\nCOF_CON__FaceArea_Hoz_Bottom\r\nCOF_CON__FaceArea_Vertical\r\nCOF_CON__FaceArea_Slanted_Up\r\nCOF_CON__FaceArea_Slanted_Down\r\nCOF_CON__FaceArea_Non_Flat",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os,time\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nfrom Autodesk.DesignScript.Geometry import Point as pt\r\nfrom Autodesk.DesignScript.Geometry import Line as ln\r\nfrom Autodesk.DesignScript.Geometry import Polygon as pg\r\nfrom Autodesk.DesignScript.Geometry import Curve as cr\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\nclr.AddReference(\"DSCoreNodes\")\r\n\r\ndef flatten(t):\r\n    return [item for sublist in t for item in sublist]\t\r\n\r\ndef getAllElementsOfCategory(doc,cat):\r\n\t\"\"\"Lấy tất cả các phần tử thuộc Category\r\n\tcates (list)\r\n\toc : Revit Document\t\"\"\"\t\r\n\tcategories = doc.Settings.Categories\t\t\r\n\tfor c in categories:\r\n\t\tif c.Name == cat:\t\t\t\t\t\r\n\t\t\treturn list(FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements())\r\n\r\ndef getSolids(e,opt = None):\r\n\tif opt == None:\r\n\t\topt = Options()\t\r\n\tsolid = []\r\n\tgeoE1 = e.get_Geometry(opt)\r\n\tgeoE2 = []\r\n\ttry:\r\n\t\tenum = geoE1.GetEnumerator()\t\r\n\t\twhile enum.MoveNext():\r\n\t\t\tgeoE2 = enum.Current\r\n\t\tif isinstance(geoE2,Solid):\r\n\t\t\tsolid.Add(geoE2)\t\t\r\n\t\telse:\r\n\t\t\tif isinstance(geoE2,GeometryInstance):\r\n\t\t\t\tgeoObj = geoE2.GetInstanceGeometry()\r\n\t\t\t\tfor s in geoObj:\r\n\t\t\t\t\tif isinstance(s,Solid) and s.Volume > 0:\r\n\t\t\t\t\t\tsolid.Add(s)\t\r\n\texcept Exception as ex:\r\n\t\tpass\t\r\n\treturn solid\r\n\r\ndef UnionSolid (solids):\r\n\tmergedSolid = None\r\n\ttry:\r\n\t\tif len(solids) == 0:\r\n\t\t\treturn None\r\n\t\tif len(solids) == 1:\r\n\t\t\treturn solids[0]\r\n\t\telse:\t\t\t\r\n\t\t\tfirst = solids[0]\r\n\t\t\tres = solids[1:]\r\n\t\t\tsecond = UnionSolid(res)\t\t\t\r\n\t\t\tmergedSolid = BooleanOperationsUtils.ExecuteBooleanOperation(first,second,BooleanOperationsType.Union)\r\n\texcept:\r\n\t\tpass\r\n\treturn mergedSolid\r\n\r\ndef getRawVolume(solids):\r\n\tvol = 0\r\n\ttry:\r\n\t\tfor s in solids:\r\n\t\t\tvol += s.Volume*0.0283168\r\n\texcept:\t\r\n\t\tpass\r\n\treturn vol\r\n\r\ndef get_volume_area(doc,elems,param_volume = None, write_param = False,param_area = None,param_area_sep = None):\r\n    pairs=[]\r\n    exceptions = []\r\n    face_list = []\r\n    face_normal_list = []\r\n    for e in elems: \r\n        try:\r\n            volume = None\r\n            merged_solid = None\r\n            faces = None\r\n            pair = []\r\n            # if e.__class__.__name__ == 'Stairs':            \r\n            if e.Category.Name == 'Stairs':\r\n                subs = []\r\n                try:\r\n                    runs = [doc.GetElement(eid) for eid in e.GetStairsRuns()]\r\n                    landings = [doc.GetElement(eid) for eid in e.GetStairsLandings()]                    \r\n                    subs.extend(runs)\r\n                    subs.extend(landings)    \r\n                    merged_solid = UnionSolid([UnionSolid(getSolids(s)) for s in subs])                \r\n                except: # nếu không có Runs và Landings (trường hợp Model In Place)\r\n                    merged_solid = UnionSolid(getSolids(e))\r\n            else:\r\n                if e.LookupParameter('Volume') != None:\r\n                    volume = e.LookupParameter('Volume').AsDouble()\r\n                    merged_solid = UnionSolid(getSolids(e))\r\n                else:\r\n                    solids = getSolids(e)\r\n                    merged_solid = UnionSolid(solids)\r\n            \r\n            volume = round(merged_solid.Volume*0.0283168,3)\r\n            \r\n            faces = merged_solid.Faces\r\n            face_area_string = '{0};{1};{2};{3};{4};{5}'\r\n            face_hor_up_area = 0\r\n            face_hor_down_area = 0\r\n            face_ver_area = 0\r\n            face_slant_up_area = 0\r\n            face_slant_down_area = 0\r\n            face_non_flat = 0\r\n            for f in faces:\r\n                if f.__class__.__name__ == 'PlanarFace':\r\n                    if f.FaceNormal.X == f.FaceNormal.Y == 0:\r\n                        if f.FaceNormal.Z > 0: # Face mặt trên\r\n                            face_hor_up_area += round(f.Area*0.092903,3)\r\n                        elif f.FaceNormal.Z < 0: # Face mặt dưới\r\n                            face_hor_down_area += round(f.Area*0.092903,3)\r\n                    elif f.FaceNormal.Z == 0: # Face thẳng đứng\r\n                        face_ver_area += round(f.Area*0.092903,3)\r\n                    elif f.FaceNormal.X != f.FaceNormal.Y:\r\n                        if f.FaceNormal.Z > 0: # Face Xiên hướng lên\r\n                            face_slant_up_area += round(f.Area*0.092903,3)\r\n                        elif f.FaceNormal.Z < 0: # Face Xiên hướng xuống\r\n                            face_slant_down_area += round(f.Area*0.092903,3)\r\n                elif f.__class__.__name__ == 'RuledFace':\r\n                    face_non_flat += round(f.Area*0.092903,3)\r\n            face_area_string = face_area_string.format(face_hor_up_area,face_hor_down_area,face_ver_area,face_slant_up_area,face_slant_down_area,face_non_flat)\r\n            \r\n            pair.append(e)\r\n            pair.append(volume)  \r\n            pair.append(face_area_string)\r\n            pair.append(e.__class__.__name__)  \r\n            pairs.append(pair)\r\n            \r\n            face_list.append(faces)\r\n            face_normal_list.append([f.FaceNormal for f in faces])       \r\n        \r\n        except Exception as ex:\r\n            exceptions.append(ex)\r\n            pass\r\n    \r\n    count_success = 0\r\n    if write_param == True:\r\n        TransactionManager.Instance.EnsureInTransaction(doc)\r\n        for p in pairs:\r\n            try: # Ghi Volume\r\n                param = p[0].LookupParameter(param_volume)\r\n                if param.StorageType == StorageType.Double:\r\n                    param.Set(round(p[1]/0.0283168,3))\r\n                elif param.StorageType == StorageType.String:\r\n                    param.Set(str(round(p[1],3)))\r\n            except Exception as ex:\r\n                exceptions.append(ex)\r\n                pass\r\n            try: # ghi Face Area String\r\n                param1 = p[0].LookupParameter(param_area)\r\n                if param1.StorageType == StorageType.String:\r\n                    param1.Set(str(p[2]))\r\n            except Exception as ex:\r\n                exceptions.append(ex)\r\n                pass\r\n            try: # ghi parater Face Area seperated\r\n                for i in range(len(param_area_sep)):\r\n                    try:\r\n                        param2 = p[0].LookupParameter(param_area_sep[i])\r\n                        if param2.StorageType == StorageType.Double:\r\n                            param2.Set(round(float(p[2].split(';')[i])/0.092903,3))\r\n                    except Exception as ex:\r\n                        exceptions.append(ex.args[0])\r\n                        pass\r\n            except:\r\n                pass\r\n\r\n            count_success += 1       \r\n        \r\n        TransactionManager.Instance.TransactionTaskDone()  \r\n\treturn pairs,\"Succeeded write parameter {0}/{1} Elements\".format(count_success,len(pairs)), exceptions#,, face_list, face_normal_list\r\n\r\n\r\ndef writeParameterValueSingle(e,paramName,value):\t\r\n    \"\"\"writeParameterValueSingle 210915\"\"\"\r\n    try:\r\n        param = e.LookupParameter(paramName)\r\n        param.Set(value)\r\n    except:\r\n        pass\r\n\r\ndef writeParameterValueMulti(elems,paramName,value):\r\n    \"\"\"writeParameterValueSingle210915\"\"\"\r\n    res = []\r\n    TransactionManager.Instance.EnsureInTransaction(doc)\r\n    for e in elems:\r\n        try:\r\n            param = e.LookupParameter(paramName)\r\n            param.Set(value)\r\n        except:\r\n            pass\r\n        res += 1\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn res\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nelems = UnwrapElement(IN[0])\r\nask_select = IN[1]\r\ncategories = IN[2].splitlines()\r\np_vol = IN[3]\r\nask_write_param = IN[4]\r\np_area = IN[5]\r\np_area_seperated = IN[6].splitlines()\r\n\r\nif ask_select == True:\r\n    OUT = get_volume_area(doc,elems,param_volume = p_vol, write_param = ask_write_param,param_area = p_area, param_area_sep = p_area_seperated) \r\nelse:\r\n    elems = []\r\n    for cat in categories:\r\n        try:\r\n            elems.extend(getAllElementsOfCategory(doc,cat))\r\n        except:\r\n            pass\r\n    OUT = get_volume_area(doc,elems,param_volume = p_vol, write_param = ask_write_param,param_area = p_area, param_area_sep = p_area_seperated) \r\n#elems, categories",
+      "VariableInputPorts": true,
+      "Id": "95e1dc596d554af68e44805d1e9abae8",
+      "Inputs": [
+        {
+          "Id": "075959519159479a826817c232ce47be",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8a56a622f5f84dc890c008d94dcdb2ae",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ab5debd7514b47ada981f32f96685d22",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e58db95ad9874101a2bf51c81d25f1f0",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "028cc7e3e3914d529b1d4370924655f4",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "21ad2ed942ab4fc8ada1df5183d09e9f",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "47e9d73835284d3fa21466c17a8575b7",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0d54ec28bbe4450baa96ae83fd4b7e79",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "f77fa389d7884187afd483226545b3a9",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "beb68a4113e746c1afe5c4a741f6475d",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "42b2462dc2284471b45774ad5b17ca5b",
+      "Inputs": [
+        {
+          "Id": "379afa7f149543b691b49851a6cfe123",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "fac34e85d18d4291a51b867bcd9287da",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "4fce14e2-03d0-4e6a-bf23-a8ecda0beb67-000597c6",
+        "4fce14e2-03d0-4e6a-bf23-a8ecda0beb67-000597c9"
+      ],
+      "Id": "723be8fe8f5b4612b14910b784c91a4d",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "209b1267d6ad439e85c34bffd739841d",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Stairs\r\nWalls\r\nFurnitures\r\nStructural Columns",
+      "Id": "83e833a7afc645c5a666d6c1439958df",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "542dc4211c084006ae3aa095c9c546d7",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "5fa96e6dc80549808645a90616b27d8a",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d3bb89980c5546138209d89849aaa6d1",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_GEN__Volume",
+      "Id": "5fef90fb955c43c98949ed0a2339c178",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5cd7a437654549a28a296521717eed3f",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__FaceArea_String",
+      "Id": "02dc36baff03426bbb6fc39ba4acadce",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2930227fd1ee4414bb26416a9cd8e327",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__FaceArea_Hoz_Top\r\nCOF_CON__FaceArea_Hoz_Bottom\r\nCOF_CON__FaceArea_Vertical\r\nCOF_CON__FaceArea_Slanted_Up\r\nCOF_CON__FaceArea_Slanted_Down\r\nCOF_CON__FaceArea_Non_Flat",
+      "Id": "ef43e0c77c794f83a428eb6d7bf56f3e",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "a7c5b6cac2bc4612aa5cdaa2de3452e1",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "0d54ec28bbe4450baa96ae83fd4b7e79",
+      "End": "379afa7f149543b691b49851a6cfe123",
+      "Id": "ba978723ae3a47b58fa1ed59e2bd6c40"
+    },
+    {
+      "Start": "beb68a4113e746c1afe5c4a741f6475d",
+      "End": "8a56a622f5f84dc890c008d94dcdb2ae",
+      "Id": "56f45f2843414ce0bf383b64af65c9aa"
+    },
+    {
+      "Start": "209b1267d6ad439e85c34bffd739841d",
+      "End": "075959519159479a826817c232ce47be",
+      "Id": "e1dd9b87b0a94f01977251618e73e7e0"
+    },
+    {
+      "Start": "542dc4211c084006ae3aa095c9c546d7",
+      "End": "ab5debd7514b47ada981f32f96685d22",
+      "Id": "e4411407389a402ebaa1dbd2bcc0b704"
+    },
+    {
+      "Start": "d3bb89980c5546138209d89849aaa6d1",
+      "End": "028cc7e3e3914d529b1d4370924655f4",
+      "Id": "cb171bbae28344bda85bcc3e43359a79"
+    },
+    {
+      "Start": "5cd7a437654549a28a296521717eed3f",
+      "End": "e58db95ad9874101a2bf51c81d25f1f0",
+      "Id": "66e6bd7b755345ecb41f6d4b11ce94c9"
+    },
+    {
+      "Start": "2930227fd1ee4414bb26416a9cd8e327",
+      "End": "21ad2ed942ab4fc8ada1df5183d09e9f",
+      "Id": "c84f96ff1d934e099c27b58fdd99febc"
+    },
+    {
+      "Start": "a7c5b6cac2bc4612aa5cdaa2de3452e1",
+      "End": "47e9d73835284d3fa21466c17a8575b7",
+      "Id": "1dcae0bd96b54b87b6b3808a3f9b1742"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "95e1dc596d554af68e44805d1e9abae8",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 450.76358983194132,
+        "Y": 291.394086071488
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(1) Do you select elements manually? if True go (2), False go (3)",
+        "Id": "f77fa389d7884187afd483226545b3a9",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -108.66334714361625,
+        "Y": 39.033752049229207
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "42b2462dc2284471b45774ad5b17ca5b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 633.02728110295163,
+        "Y": 377.87782760151674
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(2) Select Model Elements",
+        "Id": "723be8fe8f5b4612b14910b784c91a4d",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 19.617108493675914,
+        "Y": 137.21468894212865
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(3) Category Names for selection, then go (4)",
+        "Id": "83e833a7afc645c5a666d6c1439958df",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -46.96999713700032,
+        "Y": 268.55957392460829
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(4)Do you write elements Parameter VOLUME Value? if True go (5)",
+        "Id": "5fa96e6dc80549808645a90616b27d8a",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -132.17932816822861,
+        "Y": 383.21201136048296
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(5)Volume Parameter Name to Write",
+        "Id": "5fef90fb955c43c98949ed0a2339c178",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -13.650332506799316,
+        "Y": 473.10419722383654
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(6)Area Parameter Name to Write",
+        "Id": "02dc36baff03426bbb6fc39ba4acadce",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1.1151917894973167,
+        "Y": 557.35768193955937
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(7)Seperated Area Parameter Names to Write                        ",
+        "Id": "ef43e0c77c794f83a428eb6d7bf56f3e",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -68.920065782205825,
+        "Y": 662.063674394917
+      }
+    ],
+    "Annotations": [],
+    "X": 19.145709133998139,
+    "Y": -453.242067296594,
+    "Zoom": 1.0073982863610083
+  }
+}

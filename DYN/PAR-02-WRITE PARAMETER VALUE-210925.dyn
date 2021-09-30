@@ -1,0 +1,486 @@
+{
+  "Uuid": "d644655c-07e1-41a1-ace7-af4ea8aa2bf1",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "07-Write-Comments-210909",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "59ab0498b2f24860804760c40cba16fe",
+      "Name": "Parameter Name (STRING ONLY )",
+      "Type": "string",
+      "Value": "COF_GEN__Level",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "c6b91507287a4b39935241be3b494825",
+      "Name": "Parameter Value",
+      "Type": "string",
+      "Value": "Machine Base",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "edcf79b399824314a6c8bf032400c676",
+      "Name": "Delimeter",
+      "Type": "string",
+      "Value": ", ",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "7291a069b7254812bfd79debf93be772",
+      "Name": "Concentrate with Deliemeter(y/n)?",
+      "Type": "boolean",
+      "Value": "false",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "a84b6e169a3a43ac9be1bc22f80ae85c",
+      "Name": "HELP BIM CODE",
+      "Type": "string",
+      "Value": "Móng bè: FD\r\nĐà kiềng: GB\r\nCột: CL\r\nDẦM: BM\r\nSÀN: SL\r\nVÁCH: SW\r\nCầu thang: ST\r\nDockleveler:DLV\r\nMachine Base: MB",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "11f64fa9cd3f4682a915e2a834f7549d",
+      "Name": "Python Lib Path",
+      "Type": "string",
+      "Value": "K:\\_BIM STANDARD\\_DYNAMO_REVIT\\210903\\py_dynamo",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "f525796ea0ae4415944253ae835f4cde",
+      "Name": "Watch",
+      "Type": "unknown",
+      "InitialValue": "",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_GEN__Level",
+      "Id": "59ab0498b2f24860804760c40cba16fe",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "62462501199a4a5caa257664762e1ea8",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Machine Base",
+      "Id": "c6b91507287a4b39935241be3b494825",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "872f2b9ec4634c92bc2c81d9f1c634c2",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "d57fac98-4da9-43c0-8cca-bfabbda08905-00115521",
+        "d57fac98-4da9-43c0-8cca-bfabbda08905-00115554"
+      ],
+      "Id": "641dfe19e7f741d2822e52c1ec2fec19",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f40d22ae84244e6c86026ce6c50c715c",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": ", ",
+      "Id": "edcf79b399824314a6c8bf032400c676",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "28b0c874f1cf42d897d79aedf5628d4c",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "7291a069b7254812bfd79debf93be772",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "afb29cee9b4347f7b25d6a4b0fa6bcef",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Móng bè: FD\r\nĐà kiềng: GB\r\nCột: CL\r\nDẦM: BM\r\nSÀN: SL\r\nVÁCH: SW\r\nCầu thang: ST\r\nDockleveler:DLV\r\nMachine Base: MB",
+      "Id": "a84b6e169a3a43ac9be1bc22f80ae85c",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "e5cf4f7f80db453ca8c2e753d68f873b",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os,json,tempfile\r\nfrom shutil import copyfile\r\nfrom json import *\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\n\r\n## add module director\r\n\"\"\"\r\nip = \"172.16.2.29\"\r\ndomain = \"hcmcfcfs01\"\r\ndynPyDir = \"\"\r\ndynPyDir_ip = \"\\\\\\\\{0}\\\\databim$\\\\BimESC\\\\00-BIM STANDARD\\\\PYTHON\\\\pythondynamo\".format(ip)\r\ndynPyDir_domain = \"\\\\\\\\{0}\\\\databim$\\\\BimESC\\\\00-BIM STANDARD\\\\PYTHON\\\\pythondynamo\".format(domain)\r\n\r\nif os.path.exists(dynPyDir_domain):\r\n\tdynPyDir = dynPyDir_domain\r\n\t\r\nif os.path.exists(dynPyDir_ip):\r\n\tdynPyDir = dynPyDir_ip\r\n\t\r\nsys.path.append(dynPyDir)\r\nimport pyDyn\r\nfrom pyDyn import *\r\n\"\"\"\r\n##\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\ncategories = doc.Settings.Categories\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\n\r\nelements = UnwrapElement(IN[0])\r\nparam_name = IN[1]\r\nwrite_value = IN[2]\r\n\r\nflagConcentrate = IN[3]\r\ndelimeter = IN[4]\r\n\r\n#setParameterValue(doc,elements,paramName,paramValue)\r\n# Place your code below this line\r\n\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nif flagConcentrate:\t\r\n\tfor e in elements:\r\n\t\ttry:\r\n\t\t\tparam = e.LookupParameter(param_name)\r\n\t\t\tif param.StorageType == StorageType.Double:\r\n\t\t\t\traise Exception('Parameter not be string type')\r\n\t\t\told_value = param.AsString()\r\n\t\t\tif not write_value.lower() in old_value.lower():\r\n\t\t\t\tnew_value = old_value + delimeter + write_value\r\n\t\t\t\tparam.Set(new_value)\t\t\t\t\t\r\n\t\texcept Exception as ex:\r\n\t\t\tpass\r\n\t\r\nelse:\r\n\tfor e in elements:\r\n\t\ttry:\r\n\t\t\tparam = e.LookupParameter(param_name)\r\n\t\t\tif param.StorageType == StorageType.Double:\r\n\t\t\t\traise Exception('Parameter not be string type')\r\n\t\t\tnew_value = write_value\r\n\t\t\tparam.Set(new_value)\t\t\t\t\t\r\n\t\texcept Exception as ex:\r\n\t\t\tpass\r\nTransactionManager.Instance.TransactionTaskDone()\r\nOUT = \"OK\"\r\n# Assign your output to the OUT variable.\r\n\t",
+      "VariableInputPorts": true,
+      "Id": "37c205e08ee546abb24e985aa13696b1",
+      "Inputs": [
+        {
+          "Id": "f5ae0995ffe1493995309a0fdcfba183",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "42b0511ecf324f57be499ea92079cb72",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "1f46e5007688479696bdb88f7b16c5ac",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7c3e963631da49cc8984f200a5a63cfb",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "653d2642fd5940cbb70893458ffde816",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "fa70a6031d5f4ec6bcf72c581fb3733e",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6518a88e6e5a4bcfa6ecbb7d796cfa85",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "f525796ea0ae4415944253ae835f4cde",
+      "Inputs": [
+        {
+          "Id": "83bf2d635ba043b79fa3e6b49eb315ca",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "70ac0ef1aad94613854cd0ab99e79f3e",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "K:\\_BIM STANDARD\\_DYNAMO_REVIT\\210903\\py_dynamo",
+      "Id": "11f64fa9cd3f4682a915e2a834f7549d",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "fc656a381ff5486ba0c243b1ad52ea72",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "62462501199a4a5caa257664762e1ea8",
+      "End": "42b0511ecf324f57be499ea92079cb72",
+      "Id": "08f700c9cfed440cb099f37649071d83"
+    },
+    {
+      "Start": "872f2b9ec4634c92bc2c81d9f1c634c2",
+      "End": "1f46e5007688479696bdb88f7b16c5ac",
+      "Id": "52c56aa69e144e5cb246b6ef9ea7ee8d"
+    },
+    {
+      "Start": "f40d22ae84244e6c86026ce6c50c715c",
+      "End": "f5ae0995ffe1493995309a0fdcfba183",
+      "Id": "7545b5d7af044650a5d9057f32763151"
+    },
+    {
+      "Start": "28b0c874f1cf42d897d79aedf5628d4c",
+      "End": "653d2642fd5940cbb70893458ffde816",
+      "Id": "d7175e9834ee4375a824baa6121e9a95"
+    },
+    {
+      "Start": "afb29cee9b4347f7b25d6a4b0fa6bcef",
+      "End": "7c3e963631da49cc8984f200a5a63cfb",
+      "Id": "8db63b8aabb14b58b8e5f82d6d4963ec"
+    },
+    {
+      "Start": "6518a88e6e5a4bcfa6ecbb7d796cfa85",
+      "End": "83bf2d635ba043b79fa3e6b49eb315ca",
+      "Id": "b7e4554e15d54a0a8c231f4377df7bd1"
+    },
+    {
+      "Start": "fc656a381ff5486ba0c243b1ad52ea72",
+      "End": "fa70a6031d5f4ec6bcf72c581fb3733e",
+      "Id": "bffd73408e824f839cd550533fa513a5"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -35.163445468415915,
+      "EyeY": 38.093732590783929,
+      "EyeZ": 169.95665309734363,
+      "LookX": 35.163445468415915,
+      "LookY": -38.093732590783929,
+      "LookZ": -169.95665309734363,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Name (STRING ONLY )",
+        "Id": "59ab0498b2f24860804760c40cba16fe",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -405.026011494154,
+        "Y": -9.92047148900457
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Value",
+        "Id": "c6b91507287a4b39935241be3b494825",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -404.09987526310414,
+        "Y": 53.56886613010326
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "641dfe19e7f741d2822e52c1ec2fec19",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -408.52649974992357,
+        "Y": 134.18576539159113
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Delimeter",
+        "Id": "edcf79b399824314a6c8bf032400c676",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -385.91303652879532,
+        "Y": 278.74440155803438
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Concentrate with Deliemeter(y/n)?",
+        "Id": "7291a069b7254812bfd79debf93be772",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -382.67669956907361,
+        "Y": 356.888178391677
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "HELP BIM CODE",
+        "Id": "a84b6e169a3a43ac9be1bc22f80ae85c",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -391.70450462449895,
+        "Y": 433.22810521064406
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "37c205e08ee546abb24e985aa13696b1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 73.3619293633875,
+        "Y": 226.74052831662789
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "f525796ea0ae4415944253ae835f4cde",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "X": 284.98688952200814,
+        "Y": 307.30717169968659
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Lib Path",
+        "Id": "11f64fa9cd3f4682a915e2a834f7549d",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -398.07343021320378,
+        "Y": 684.48821017741091
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "b851654e14034f9c91ffdb0238ab8098",
+        "Title": "",
+        "Nodes": [
+          "59ab0498b2f24860804760c40cba16fe",
+          "c6b91507287a4b39935241be3b494825"
+        ],
+        "Left": -415.026011494154,
+        "Top": -62.920471489004569,
+        "Width": 238.0,
+        "Height": 184.48933761910783,
+        "FontSize": 36.0,
+        "InitialTop": -9.92047148900457,
+        "InitialHeight": 208.48933761910783,
+        "TextblockHeight": 43.0,
+        "Background": "#FFFF7BAC"
+      }
+    ],
+    "X": 380.45894146717978,
+    "Y": 143.46944903760902,
+    "Zoom": 0.80070143620586076
+  }
+}

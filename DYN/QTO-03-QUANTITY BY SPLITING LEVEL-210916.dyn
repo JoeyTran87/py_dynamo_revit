@@ -1,0 +1,566 @@
+{
+  "Uuid": "f616bc87-fcaa-4af0-942d-1f03a2c97ee0",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "_QTO-QUANTITY BY SPLITING LEVEL-210916",
+  "ElementResolver": {
+    "ResolutionMap": {
+      "Point": {
+        "Key": "Autodesk.DesignScript.Geometry.Point",
+        "Value": "ProtoGeometry.dll"
+      },
+      "Polygon": {
+        "Key": "Autodesk.DesignScript.Geometry.Polygon",
+        "Value": "ProtoGeometry.dll"
+      }
+    }
+  },
+  "Inputs": [
+    {
+      "Id": "878139a4d7a149398a317960c4dc7ae6",
+      "Name": "Parameter Quantity (Write to)",
+      "Type": "string",
+      "Value": "COF_CON__VolumeByLevel",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "0e34e1e7bd534a549098624ce242d41b",
+      "Name": "Parameter Quantity (Read from)",
+      "Type": "string",
+      "Value": "COF_GEN__Volume",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "0cbb665fc37846ebae7c6772ce2d9be1",
+      "Name": "Elevvation (mm)",
+      "Type": "number",
+      "Value": "2000",
+      "MaximumValue": 5000.0,
+      "MinimumValue": 1000.0,
+      "StepValue": 500.0,
+      "NumberType": "Double",
+      "Description": "A slider that produces numeric values."
+    },
+    {
+      "Id": "8345694a072f4ead8a63a7907e00ff7e",
+      "Name": "Step",
+      "Type": "number",
+      "Value": "500",
+      "MaximumValue": 5000.0,
+      "MinimumValue": 2.0,
+      "StepValue": 500.0,
+      "NumberType": "Double",
+      "Description": "A slider that produces numeric values."
+    },
+    {
+      "Id": "5232e21d10674961b113f58a27674dc8",
+      "Name": "Do you write Parameter ?",
+      "Type": "boolean",
+      "Value": "true",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "e3042a70572b4f2599affd10274ede57",
+      "Name": "Do you show Points?",
+      "Type": "boolean",
+      "Value": "true",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "7b5cf71b33294d8fbf7cba6bd7345680",
+      "Name": "Do you calculate only Vertical edges?",
+      "Type": "boolean",
+      "Value": "false",
+      "Description": "Selection between a true and false."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "f72dcf5b-94ad-4c6f-9a9c-20343794ecd6-000594e8"
+      ],
+      "Id": "c58294afccee4060889a211f8bdd04af",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "875e73a2db5141539bedc38370f10f1c",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os,time\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nfrom Autodesk.DesignScript.Geometry import Point as pt\r\nfrom Autodesk.DesignScript.Geometry import Line as ln\r\nfrom Autodesk.DesignScript.Geometry import Polygon as pg\r\nfrom Autodesk.DesignScript.Geometry import Curve as cr\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\n\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\n\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\n\r\nclr.AddReference(\"DSCoreNodes\")\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n\r\ndef flatten(t):\r\n    return [item for sublist in t for item in sublist]\t\t\r\n    \r\ndef _mm(a,r = -1):\r\n\treturn round(a*304.8,r)\r\n\t\r\ndef length_curve_loop(loop):\r\n\tlength = 0\r\n\tfor curve in loop:\r\n\t\ttry:\r\n\t\t\tlength += curve.Length\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn length\t\r\ndef get_floor_boundary(doc,floor):\r\n\tif floor.__class__.__name__ == 'Floor':\r\n\t\topt = Options()\t\r\n\t\tsketch = doc.GetElement(ElementId(floor.Id.IntegerValue - 1))\r\n\t\t#if sketch.__class__.__name__ == 'Sketch':\r\n\t\treturn list(sketch.Profile)\r\n\t\t\r\ndef revit_xyz_to_dyn_point(xyz,z_zero = False):\r\n\t\"\"\"210917\"\"\"\r\n\tz = xyz.Z\r\n\tif z == True:\r\n\t\tz = 0\r\n\tif xyz.__class__.__name__ == 'XYZ':\r\n\t\treturn pt.ByCoordinates(_mm(xyz.X),_mm(xyz.Y),_mm(z))\r\n\t\r\ndef revit_line_to_dyn_line(line):\r\n\tif line.__class__.__name__ == 'Line' or line.__class__.__name__ == 'Curve' :\r\n\t\tpoint_0 = revit_xyz_to_dyn_point(line.GetEndPoint(0))\r\n\t\tpoint_1 = revit_xyz_to_dyn_point(line.GetEndPoint(1))\r\n\t\tline = ln.ByStartPointEndPoint(point_0,point_1)\r\n\t\treturn line\r\n\t\r\ndef get_bounding_minmax(doc,elem):\r\n\ttry:\r\n\t\tbbx = elem.get_BoundingBox(doc.ActiveView)\r\n\t\tmin = bbx.Min\r\n\t\tmax = bbx.Max\r\n\t\treturn min,max\r\n\texcept Exception as ex:\r\n\t\treturn ex\r\ndef points_array(start,end,step = 1000,ext = 0):\r\n\t\"\"\"fixed 210917\r\n\tTẠO CHUỖI ĐIỂM DYNAMO\r\n\tĐỒNG CAO ĐỘ 0\t\r\n\tstart,end (XYZ - Revit)\r\n\tstep,ext,offset (mm)\r\n\r\n\treturn: [Point] (Dynamo)\r\n\t\"\"\"\t\t\r\n\tstart = revit_xyz_to_dyn_point(start)\r\n\tend = revit_xyz_to_dyn_point(end)\r\n\r\n\tline = ln.ByStartPointEndPoint(start, end)\r\n\ttry:\r\n\t\tif line.Length > step:\r\n\t\t\tcount = 2\r\n\t\t\ttry:\r\n\t\t\t\tcount = int(line.Length / (step + ext))\r\n\t\t\texcept:\r\n\t\t\t\tpass\t\t\r\n\t\t\tpoint_array = list(cr.PointsAtEqualSegmentLength(line, count))\r\n\t\t\tif point_array != None:\r\n\t\t\t\treturn point_array\r\n\t\t\telse:\r\n\t\t\t\traise Exception('Default Apply')\r\n\t\telse:\r\n\t\t\traise Exception('Default Apply')\r\n\texcept Exception as ex:\r\n\t\treturn start,end\r\n\t\r\ndef _m3(v,r = 3):\r\n\treturn round(v*0.0283168, r)\r\n\r\ndef getAllElementsOfCategory(doc,cat):\r\n\t\"\"\"Lấy tất cả các phần tử thuộc Category\r\n\tcates (list)\r\n\toc : Revit Document\t\"\"\"\t\r\n\tcategories = doc.Settings.Categories\t\t\r\n\tfor c in categories:\r\n\t\tif c.Name == cat:\t\t\t\t\t\r\n\t\t\treturn list(FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements())\r\n\r\ndef getSolids(e,opt = None):\r\n\tif opt == None:\r\n\t\topt = Options()\t\r\n\tsolid = []\r\n\ttry:\r\n\t\tgeoE1 = e.get_Geometry(opt)\r\n\t\tgeoE2 = []\r\n\t\tenum = geoE1.GetEnumerator()\t\r\n\t\twhile enum.MoveNext():\r\n\t\t\tgeoE2 = enum.Current\r\n\t\t\tif isinstance(geoE2,Solid):\r\n\t\t\t\tsolid.Add(geoE2)\t\t\r\n\t\t\telse:\r\n\t\t\t\tif isinstance(geoE2,GeometryInstance):\r\n\t\t\t\t\tgeoObj = geoE2.GetInstanceGeometry()\r\n\t\t\t\t\tfor s in geoObj:\r\n\t\t\t\t\t\tif isinstance(s,Solid) and s.Volume > 0:\r\n\t\t\t\t\t\t\tsolid.Add(s)\t\r\n\texcept Exception as ex:\r\n\t\tpass\t\r\n\treturn solid\r\ndef UnionSolid (solids):\r\n\tmergedSolid = None\r\n\ttry:\r\n\t\tif len(solids) == 0:\r\n\t\t\treturn None\r\n\t\tif len(solids) == 1:\r\n\t\t\treturn solids[0]\r\n\t\telse:\t\t\t\r\n\t\t\tfirst = solids[0]\r\n\t\t\tres = solids[1:]\r\n\t\t\tsecond = UnionSolid(res)\t\t\t\r\n\t\t\tmergedSolid = BooleanOperationsUtils.ExecuteBooleanOperation(first,second,BooleanOperationsType.Union)\r\n\texcept:\r\n\t\tpass\r\n\treturn mergedSolid\r\n\r\ndef get_merged_solid(e):\r\n\tmerged_solid = None\r\n\tif e.Category.Name == 'Stairs':\r\n\t\tsubs = []\r\n\t\ttry:\r\n\t\t\truns = [doc.GetElement(eid) for eid in e.GetStairsRuns()]\r\n\t\t\tlandings = [doc.GetElement(eid) for eid in e.GetStairsLandings()]                    \r\n\t\t\tsubs.extend(runs)\r\n\t\t\tsubs.extend(landings)    \r\n\t\t\tmerged_solid = UnionSolid([UnionSolid(getSolids(s)) for s in subs])                \r\n\t\texcept: # nếu không có Runs và Landings (trường hợp Model In Place)\r\n\t\t\tmerged_solid = UnionSolid(getSolids(e))\r\n\telse:\r\n\t\tif e.LookupParameter('Volume') != None:\r\n\t\t\tmerged_solid = UnionSolid(getSolids(e))\r\n\t\telse:\r\n\t\t\tsolids = getSolids(e)\r\n\t\t\tmerged_solid = UnionSolid(solids)\t\r\n\treturn merged_solid\r\n\r\ndef get_edges(e,opt = None):\r\n\tif opt == None:\r\n\t\topt = Options()\r\n\tmerged_solid = get_merged_solid(e)\r\n\tedge_array = merged_solid.Edges\r\n\treturn edge_array\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\nelems = IN[0]\r\nelems = UnwrapElement(elems)\r\ntry :\r\n\tlen(elems)\r\nexcept:\r\n\telems = [elems]\r\nelevation = IN[1]\r\nparam_write = IN[2]\r\nparam_read = IN[3]\r\nstep_ = IN[4]\r\nask_write_parameter = IN[5]\r\nask_show_points = IN[6]\r\nask_vertical = IN[7]\r\n\r\n#---------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------#\t\r\nweb_points = []\r\ndistribution = []\r\n\r\nexceptions = []\r\ntime_report = []\r\ntime_report.append(time.strftime(\"%d-%m-%y %H:%M:%S\"))\r\ndebugger = []\r\ndebugger.append([])\r\ndebugger.append([])\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nfor e in elems:\r\n\ttry:\r\n\t\tedges = get_edges(e)\r\n\t\tdistribute_points = []\r\n\t\tfor ed in edges:\t\t\t\r\n\t\t\ttry:\r\n\t\t\t\tcurve = ed.AsCurve()\r\n\t\t\t\ttransform = curve.ComputeDerivatives(0.5,False)\r\n\t\t\t\tpoints = None\r\n\t\t\t\tif ask_vertical == True:\r\n\t\t\t\t\tif curve.Direction.Normalize().Z != 0 :#transform.BasisX.Z != 0:\r\n\t\t\t\t\t\tpoints = points_array(curve.GetEndPoint(0),curve.GetEndPoint(1),step = step_,ext = 0)\r\n\t\t\t\telse:\r\n\t\t\t\t\tpoints = points_array(curve.GetEndPoint(0),curve.GetEndPoint(1),step = step_,ext = 0)\r\n\t\t\t\tdistribute_points.extend(points)\r\n\r\n\t\t\texcept Exception as ex:\r\n\t\t\t\texceptions.append(ex)\r\n\t\t\t\tpass\r\n\t\tparam = e.LookupParameter(param_read)\r\n\t\tdistribute_value = 0\r\n\t\tif param.StorageType == StorageType.Double:\r\n\t\t\tdistribute_value = round((param.AsDouble()*0.0283168) / len(distribute_points),3)\r\n\t\tif distribute_value != 0:\r\n\t\t\tquantity_string = \"[Below_{0} ; Above_{0}] , [{1} ; {2}]\"\r\n\t\t\tquantity_below = 0\r\n\t\t\tquantity_above = 0\r\n\t\t\tfor p in distribute_points:\r\n\t\t\t\tif p.Z <= elevation:\r\n\t\t\t\t\tquantity_below += distribute_value\r\n\t\t\t\telse:\r\n\t\t\t\t\tquantity_above += distribute_value\r\n\t\t\t\t\tpass\r\n\t\t\tquantity_string = quantity_string.format(elevation,quantity_below,quantity_above)\r\n\t\t\tdebugger[0].append(quantity_string)\r\n\t\t\ttry:\r\n\t\t\t\tparam_w = e.LookupParameter(param_write)\r\n\t\t\t\tif param_w.StorageType == StorageType.String:\r\n\t\t\t\t\tparam_w.Set(quantity_string)\r\n\t\t\texcept Exception as ex:\r\n\t\t\t\texceptions.append(ex)\r\n\t\t\t\tpass\r\n\t\tif ask_show_points == True:\r\n\t\t\tdebugger[1].append(distribute_points)\r\n\texcept Exception as ex:\r\n\t\texceptions.append(ex)\r\n\t\tpass\r\nTransactionManager.Instance.TransactionTaskDone()\r\ntime_report.append(time.strftime(\"%d-%m-%y %H:%M:%S\"))\r\nOUT = time_report, debugger,exceptions",
+      "VariableInputPorts": true,
+      "Id": "6236a625ba434abfb9276700857d0a5d",
+      "Inputs": [
+        {
+          "Id": "1086d935e64140faaccfcf7f7f659952",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ff4107a020a64e449a79fa70714b695d",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3c8858ca4f3249b79abbd67e67fd3560",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "be51c9f241c54a1392f0056a56dd8213",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "93da393b29584d5ea0b7fbb597507090",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "77f815491f9c4fcfa9530487925efa0b",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "f7833d42fd1a4b8d9c7c37f8f7024583",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "648418cbe5a543ea982ef779c7dfda41",
+          "Name": "IN[7]",
+          "Description": "Input #7",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a40368ac7ebc4e36abefcd12d87a21f7",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "f59d80cca58d451b9f30e25ce7ba1533",
+      "Inputs": [
+        {
+          "Id": "fd33d44ad28a4b2cb1f2b9d93e92f177",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "914c0b6576b14fbcb19ed961e8c065ee",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__VolumeByLevel",
+      "Id": "878139a4d7a149398a317960c4dc7ae6",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2da0f07bca134c0487afe2f6c1cdaeeb",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_GEN__Volume",
+      "Id": "0e34e1e7bd534a549098624ce242d41b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "b83c68a2b9b042bd9ba28baa2e9a4466",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "MaximumValue": 5000.0,
+      "MinimumValue": 1000.0,
+      "StepValue": 500.0,
+      "InputValue": 2000.0,
+      "Id": "0cbb665fc37846ebae7c6772ce2d9be1",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "b1816ad2c53d406383b45ce7d682bb62",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces numeric values."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "MaximumValue": 5000.0,
+      "MinimumValue": 2.0,
+      "StepValue": 500.0,
+      "InputValue": 500.0,
+      "Id": "8345694a072f4ead8a63a7907e00ff7e",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5e8f52e94f1140da8d8bebc59a284805",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces numeric values."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "5232e21d10674961b113f58a27674dc8",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "49840fa607f6425885e8f50017355dde",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "e3042a70572b4f2599affd10274ede57",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "42c846677af14e9e95ef8c6d01e642bd",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "7b5cf71b33294d8fbf7cba6bd7345680",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "752ddf3851a34aecb077091b188b9a75",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "875e73a2db5141539bedc38370f10f1c",
+      "End": "1086d935e64140faaccfcf7f7f659952",
+      "Id": "5f834be230f14879bb9680bccd930f46"
+    },
+    {
+      "Start": "a40368ac7ebc4e36abefcd12d87a21f7",
+      "End": "fd33d44ad28a4b2cb1f2b9d93e92f177",
+      "Id": "7350ee2992d3490db2dc20ccf251da54"
+    },
+    {
+      "Start": "2da0f07bca134c0487afe2f6c1cdaeeb",
+      "End": "3c8858ca4f3249b79abbd67e67fd3560",
+      "Id": "76f6dbc093c94926aa31ec5c33614414"
+    },
+    {
+      "Start": "b83c68a2b9b042bd9ba28baa2e9a4466",
+      "End": "be51c9f241c54a1392f0056a56dd8213",
+      "Id": "5170c10be2854aaebcd0ef18a01c4f23"
+    },
+    {
+      "Start": "b1816ad2c53d406383b45ce7d682bb62",
+      "End": "ff4107a020a64e449a79fa70714b695d",
+      "Id": "e87e33a59fc044ecbdbcac3a1bfddbb8"
+    },
+    {
+      "Start": "5e8f52e94f1140da8d8bebc59a284805",
+      "End": "93da393b29584d5ea0b7fbb597507090",
+      "Id": "24f235c847734eb2b09f39900d4dd749"
+    },
+    {
+      "Start": "49840fa607f6425885e8f50017355dde",
+      "End": "77f815491f9c4fcfa9530487925efa0b",
+      "Id": "ae6dedfccc864f0ab3f3d1921efc0430"
+    },
+    {
+      "Start": "42c846677af14e9e95ef8c6d01e642bd",
+      "End": "f7833d42fd1a4b8d9c7c37f8f7024583",
+      "Id": "aff6d36cafb84293b2a8a680a0411b73"
+    },
+    {
+      "Start": "752ddf3851a34aecb077091b188b9a75",
+      "End": "648418cbe5a543ea982ef779c7dfda41",
+      "Id": "08a4631403b64071ad318e8e0e0ba747"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 10000.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": 69109.131691107978,
+      "EyeY": 18500.413358603717,
+      "EyeZ": -30405.475471295806,
+      "LookX": -20274.131691107978,
+      "LookY": -14500.413358603717,
+      "LookZ": 26720.475471295806,
+      "UpX": -0.11533474797697073,
+      "UpY": 0.98162718344768507,
+      "UpZ": 0.15200647560448716
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "c58294afccee4060889a211f8bdd04af",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -43.499158688604041,
+        "Y": 205.50889161496096
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-QUANTITY ZONE",
+        "Id": "6236a625ba434abfb9276700857d0a5d",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 315.38166532796026,
+        "Y": 406.79024666941535
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "f59d80cca58d451b9f30e25ce7ba1533",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 597.1405712531307,
+        "Y": 472.71359631274117
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Quantity (Write to)",
+        "Id": "878139a4d7a149398a317960c4dc7ae6",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -22.777036584234736,
+        "Y": 497.11485220889574
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Quantity (Read from)",
+        "Id": "0e34e1e7bd534a549098624ce242d41b",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -25.097864295005138,
+        "Y": 565.50376638375906
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Elevvation (mm)",
+        "Id": "0cbb665fc37846ebae7c6772ce2d9be1",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -53.074520618645892,
+        "Y": 403.4005316049886
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Step",
+        "Id": "8345694a072f4ead8a63a7907e00ff7e",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -77.823266064905738,
+        "Y": 646.38885553913281
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Do you write Parameter ?",
+        "Id": "5232e21d10674961b113f58a27674dc8",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 29.253315101148473,
+        "Y": 731.47343917146225
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Do you show Points?",
+        "Id": "e3042a70572b4f2599affd10274ede57",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 46.940956278824842,
+        "Y": 819.40157638580558
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Do you calculate only Vertical edges?",
+        "Id": "7b5cf71b33294d8fbf7cba6bd7345680",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -43.403592581812859,
+        "Y": 921.16162120718161
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "bebbeb5c8d24438e82c39d71f107fc97",
+        "Title": "",
+        "Nodes": [
+          "6236a625ba434abfb9276700857d0a5d"
+        ],
+        "Left": 305.38166532796026,
+        "Top": 353.79024666941535,
+        "Width": 222.0,
+        "Height": 328.0,
+        "FontSize": 36.0,
+        "InitialTop": 406.79024666941535,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFFF7BAC"
+      }
+    ],
+    "X": 188.29231130912174,
+    "Y": 43.463543586682931,
+    "Zoom": 0.52055056801718458
+  }
+}

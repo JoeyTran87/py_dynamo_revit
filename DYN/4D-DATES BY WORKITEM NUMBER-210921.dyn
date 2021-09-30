@@ -1,0 +1,253 @@
+{
+  "Uuid": "2da09e00-6329-48e8-a8a6-d14de3091ffd",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "4D-DATES BY WORKITEM NUMBER-210921",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models",
+      "Id": "bc1652c82b1c4f55aa952193219e5861",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2c2fd66f47f54f9686a5e93165494ea2",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os,time,tempfile,shutil\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nfrom Autodesk.DesignScript.Geometry import Point as pt\r\nfrom Autodesk.DesignScript.Geometry import Line as ln\r\nfrom Autodesk.DesignScript.Geometry import Polygon as pg\r\nfrom Autodesk.DesignScript.Geometry import Curve as cr\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nclr.ImportExtensions(Revit.GeometryConversion)\r\nclr.AddReference(\"DSCoreNodes\")\r\nclr.AddReference('DynamoServices')\r\nfrom Dynamo.Events import *\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\n\r\ndef flatten(t):\r\n    return [item for sublist in t for item in sublist]\t\r\n\r\ndef getAllElementsOfCategory(doc,cat):\r\n\t\"\"\"Lấy tất cả các phần tử thuộc Category\r\n\tcates (list)\r\n\toc : Revit Document\t\"\"\"\t\r\n\tcategories = doc.Settings.Categories\t\t\r\n\tfor c in categories:\r\n\t\tif c.Name == cat:\t\t\t\t\t\r\n\t\t\treturn list(FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements())\r\n\r\n\r\ndef browse_element(doc,cat,param = None):\r\n\t\"\"\"\t\"\"\"\t\r\n\tdebugger = []\r\n\texceptions = []\r\n\tcategories = doc.Settings.Categories\t\t\r\n\tfor c in categories:\r\n\t\ttry:\r\n\t\t\tif c.Name == cat:\t\t\t\t\t\r\n\t\t\t\telements = list(FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements())\r\n\t\t\t\tfor e in elements:\r\n\t\t\t\t\ttry:\r\n\t\t\t\t\t\tparam_winumber = e.LookupParameter(param)\r\n\t\t\t\t\t\twi_number = param_winumber.AsString()\r\n\t\t\t\t\t\tif wi_number.strip() != \"\":\r\n\t\t\t\t\t\t\tdebugger.append(wi_number)\r\n\r\n\t\t\t\t\texcept Exception as ex:\r\n\t\t\t\t\t\texceptions.append(ex)\r\n\t\t\t\t\t\tpass\r\n\t\texcept Exception as ex:\r\n\t\t\texceptions.append(ex)\r\n\t\t\tpass\r\n\treturn debugger#, exceptions\r\n\r\ndef get_dyn_path():\r\n\treturn ExecutionEvents.ActiveSession.CurrentWorkspacePath\r\ndef get_revit_dir():\r\n\treturn os.getcwd()\r\n\r\ndef get_temp_dir():\r\n\ttempDir = tempfile.gettempdir()\r\n\treturn tempDir\r\n\r\ndef get_temp_file_path(fileName):\r\n\ttempDir = tempfile.gettempdir()\r\n\ttempFP = tempDir + fileName\r\n\treturn tempFP\r\n# def run_cmd(cmd_command):\r\n#     \"\"\"example: py C:\\\\Users\\\\tvpduy\\\\py_logistic\\\\monitor_master.py\"\"\"\r\n#     cmd_call = f\"start /B start cmd.exe @cmd /k {cmd_command}...\"\r\n#     os.system(cmd_call)\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n\r\ncates = IN[0].splitlines()\r\nparam_work_item_number = IN[1]\r\nschedule_txt_path = IN[2]\r\n\r\n\r\n# elements = flatten([getAllElementsOfCategory(doc,cat) for cat in cates])\r\n\r\nwith open(schedule_txt_path,'r')  as f:\r\n\tOUT = f.readline()\r\n# OUT = get_revit_dir(), get_dyn_path() # flatten([browse_element(doc,cat,param_work_item_number) for cat in cates])\r\n",
+      "VariableInputPorts": true,
+      "Id": "a4cba88312974e978112426cec1ba2ce",
+      "Inputs": [
+        {
+          "Id": "7d827ed5c46e464b9ec2c26ea8c4c208",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "294686c654ef4716aee6bfe18d31483d",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "03d3e5dab6834d6d8939d519aeb5e37b",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8d8b9482fda04828940c9eca91bfeba7",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "bb4c1c3601db46fdb48624aa0a7151be",
+      "Inputs": [
+        {
+          "Id": "d406296568884d18b3c3c2eb072220be",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "20ec758643c54717a4c40ff6fd09cde4",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__WorkItemNumber",
+      "Id": "2d725b8bc49346879824e608e18cba96",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "e30d4a0add884c91983566b0e2c048fc",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "K:\\_WFH ACREDO\\TXT\\ACC2101(Accredo_Asia)_LOA_210510 2.txt",
+      "Id": "ff5716febe2e426abda784cfef04ff38",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "75e7ab323d39431a8ac6e0663e8f3716",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "2c2fd66f47f54f9686a5e93165494ea2",
+      "End": "7d827ed5c46e464b9ec2c26ea8c4c208",
+      "Id": "8886f839f9a147a29d3d10e3fc81d68f"
+    },
+    {
+      "Start": "8d8b9482fda04828940c9eca91bfeba7",
+      "End": "d406296568884d18b3c3c2eb072220be",
+      "Id": "67131f5d7fbf4ce5bc3591e2ade5fae0"
+    },
+    {
+      "Start": "e30d4a0add884c91983566b0e2c048fc",
+      "End": "294686c654ef4716aee6bfe18d31483d",
+      "Id": "0be50a18d7ef4f30aaa03eca305cc55e"
+    },
+    {
+      "Start": "75e7ab323d39431a8ac6e0663e8f3716",
+      "End": "03d3e5dab6834d6d8939d519aeb5e37b",
+      "Id": "85a94039456c4a9896ce28118fef3c07"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Category name",
+        "Id": "bc1652c82b1c4f55aa952193219e5861",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 232.08569064950296,
+        "Y": 292.37156743417
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "a4cba88312974e978112426cec1ba2ce",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 493.18514347690223,
+        "Y": 406.99971651236376
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "bb4c1c3601db46fdb48624aa0a7151be",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 819.34652753911155,
+        "Y": 344.95337656561981
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Work Item Number",
+        "Id": "2d725b8bc49346879824e608e18cba96",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 188.43180425040993,
+        "Y": 490.74770537827527
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Schedule TXT path",
+        "Id": "ff5716febe2e426abda784cfef04ff38",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 188.61580649825413,
+        "Y": 563.26610484365278
+      }
+    ],
+    "Annotations": [],
+    "X": -135.90445831743523,
+    "Y": -223.49106892966978,
+    "Zoom": 0.8378016171076712
+  }
+}
