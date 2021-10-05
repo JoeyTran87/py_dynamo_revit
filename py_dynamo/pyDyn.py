@@ -614,7 +614,7 @@ def jsonString(data): # cho trường hợp bị lỗi JSON acsii encoder \u1111
 							dicStr += fm.format("\"",d,"\"",":","\"",dat.get(d),"\"")+","
 						if tn =="float":
 							dicStr += fm.format("\"",d,"\"",":","",dat.get(d),"")+","
-					except Exception, ex:
+					except Exception as ex:
 						res3.append(ex)
 						pass
 				res += fmr.format("{",dicStr[:-1],"}") +","	

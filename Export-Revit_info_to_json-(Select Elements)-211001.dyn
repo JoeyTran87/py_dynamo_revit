@@ -1,0 +1,282 @@
+{
+  "Uuid": "3c9d0464-8643-5ffe-96e5-ab1769818209",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "revit_info_to_json-(Select Elements)-211001",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f54",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f55",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f56",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f5f",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f62",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f70",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f71",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f73",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f79",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f7f",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f80",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f81",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f89",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f8a",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f8b",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f8c",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f8d",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f91",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f92",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f93",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f94",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f95",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f96",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f97",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f98",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f99",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9a",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9b",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9c",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9d",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9e",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068f9f",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068fa0",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068fa1",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068fa2",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068fa3",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00068fa4",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-000693c5",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-000693e7",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-000693f8",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069407",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069416",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069429",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069438",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069447",
+        "f3b5f1f8-6290-4a51-b9ec-69a4ff896ca2-00069539",
+        "e1cd7c10-0e10-45ec-a295-81ea04bd34d1-0007ab3e",
+        "e1cd7c10-0e10-45ec-a295-81ea04bd34d1-0007ab42",
+        "e1cd7c10-0e10-45ec-a295-81ea04bd34d1-0007ab46",
+        "e1cd7c10-0e10-45ec-a295-81ea04bd34d1-0007ab4a",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007acbc",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007acc0",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007acc4",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007ad82",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007ad86",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007ad8a",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007ad8e",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007ae51",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b172",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b1c2",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b248",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b352",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b494",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b55b",
+        "8f20e796-9c3c-4fe7-ab7f-76598ae91e73-0007b55f",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007b995",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007ba1b",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007ba5a",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007ba5e",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007ba62",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007baa5",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007baa9",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007baad",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007bab1",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007bab5",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007bab9",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007bac1",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007bc7d",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007beb9",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c012",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c045",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c07b",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c0e2",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c162",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c1cc",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c1f3",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c221",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c29a",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c2ba",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c32d",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c35b",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c35f",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c363",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c367",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c3fc",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c428",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c45b",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c4a8",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c4ce",
+        "3ac72399-a636-436b-adea-d50f2002d755-0007c500",
+        "9b818d6a-7efb-4dc3-9829-c8da4b3edcc5-000c502c",
+        "9b818d6a-7efb-4dc3-9829-c8da4b3edcc5-000c5386",
+        "6729ec5c-625c-44ba-9439-4ef0de58d530-000d1d07",
+        "14e12eb7-fcf7-4ec9-acc5-233d1a31e3d8-000db437",
+        "aef8323b-9a56-4761-9d8a-e770b802b47d-0015daa9",
+        "c1b37dc4-82b0-41e7-83d2-0fa37cc3a647-001669aa",
+        "445a8804-b41b-4802-bcd8-c24df146c427-0016b084",
+        "e1c09a16-fc59-4a94-bb2a-85a1b93306ce-0016d139",
+        "4ee57570-bc25-4edc-a866-80f5c5b046bd-00182124",
+        "e1db645e-7ba2-4e26-a1fc-1141c343c6ab-00243d93",
+        "e1db645e-7ba2-4e26-a1fc-1141c343c6ab-00243ef9",
+        "075490fb-a1a0-429d-a0b8-d4c2da0e54c3-003a064e",
+        "075490fb-a1a0-429d-a0b8-d4c2da0e54c3-003a0722",
+        "bef73495-f44a-4562-b25e-bcd2830d7e0c-003a0df6",
+        "bef73495-f44a-4562-b25e-bcd2830d7e0c-003a0eb7",
+        "bef73495-f44a-4562-b25e-bcd2830d7e0c-003a0f46",
+        "bef73495-f44a-4562-b25e-bcd2830d7e0c-003a0f9d"
+      ],
+      "Id": "b9d335f744e843258d5dcc898f7f3815",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "1ad74e07e0f64eba98658997f6146a12",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport os, sys, json,clr, tempfile,shutil\r\nfrom shutil import copyfile\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\n#----------------------------------------------------------------#\r\nelements = UnwrapElement(IN[0])\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\texcept Exception as ex:\r\n\t\tpass\r\n\r\n\r\ndef getElementsInfoDictionary(doc,elements):\r\n\tglobal debugger\r\n\tres = []\r\n\tfor e in elements:\r\n\t\ttry:\r\n\t\t\tres.append(getPropertiesDic(doc,e))\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn res\r\n\r\ndef getPropertiesDic(doc,e): # dictionary type for write JSON\r\n\tdic = {}\r\n\tif e:\t\t\r\n\t\tparams = e.Parameters\t\t\t\r\n\t\tdic['UniqueId'] = e.UniqueId\r\n\t\tif doc.GetElement(e.GetTypeId()):\r\n\t\t\tdic['TypeUniqueId'] = doc.GetElement(e.GetTypeId()).UniqueId\r\n\t\t\t# dic['TypeProperties'] = getTypePropertiesDic (e,doc)\r\n\t\t\ttDic = getTypePropertiesDic (doc,e)\r\n\t\t\tfor td in tDic:\r\n\t\t\t\tdic[td] = tDic.get(td)\r\n\t\telse:\r\n\t\t\tdic['TypeUniqueId'] = \"NoneType\"\r\n\t\t\tdic['TypeProperties'] = \"NoneTypeProperties\"\r\n\t\tfor p in params:\t\r\n\t\t\ttry:\t\r\n\t\t\t\tif p.StorageType == StorageType.String:\r\n\t\t\t\t\tif p.AsString():\r\n\t\t\t\t\t\tv = p.AsString()\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\telse:\r\n\t\t\t\t\tif p.StorageType == StorageType.Double:\r\n\t\t\t\t\t\tif p.AsValueString():\t\t\t\t\t\r\n\t\t\t\t\t\t\tif p.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or p.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n\t\t\t\t\t\t\t\tv = float(p.AsDouble())\r\n\t\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\t\tv = float(p.AsValueString())\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\tif p.StorageType == StorageType.ElementId:\r\n\t\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\t\r\n\t\t\t\t\tif p.StorageType == StorageType.Integer:\r\n\t\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tv = p.AsInteger()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\treturn dic\r\n\r\ndef getTypePropertiesDic (doc,e): # dictionary type for write JSON\r\n\tparams = doc.GetElement(e.GetTypeId()).Parameters\r\n\tdic = {}\r\n\t#dic['TypeUniqueId'] = doc.GetElement(e.GetTypeId()).UniqueId\r\n\tfor p in params:\t\r\n\t\ttry:\t\r\n\t\t\tif p.StorageType == StorageType.String:\r\n\t\t\t\tif p.AsString():\r\n\t\t\t\t\tv = p.AsString()\r\n\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\tdic[n] = v\r\n\t\t\telse:\r\n\t\t\t\tif p.StorageType == StorageType.Double:\r\n\t\t\t\t\tif p.AsValueString():\t\t\t\t\t\r\n\t\t\t\t\t\tif p.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or p.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n\t\t\t\t\t\t\tv = float(p.AsDouble())\t\t\t\t\t\t\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tv = float(p.AsValueString())\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\tif p.StorageType == StorageType.ElementId:\r\n\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\t\r\n\t\t\t\tif p.StorageType == StorageType.Integer:\r\n\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\telse:\r\n\t\t\t\t\t\tv = p.AsInteger()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn dic\r\ndef revitDir(doc):\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\r\n\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\r\n\r\ndef jsonString(data): # cho trường hợp bị lỗi JSON acsii encoder \\u1111\t\r\n\tres = \"\"\r\n\tfmr = \"{0}{1}{2}\"\r\n\tres2 = \"\"\r\n\tres3=[]\r\n\ttry:\r\n\t\tfor dat in data:\r\n\t\t\ttry:\r\n\t\t\t\tdicStr = \"\"\r\n\t\t\t\tfm = \"{0}{1}{2}{3}{4}{5}{6}\"\t\r\n\t\t\t\t#fm.format(\"{\",\"123\",\"}\")\t\r\n\t\t\t\tfor d in dat:\r\n\t\t\t\t\ttry:\r\n\t\t\t\t\t\t#res.append(type(dat.get(d)).__name__)#(dumps(d, indent = 2,sort_keys = True,ensure_ascii = True))\r\n\t\t\t\t\t\ttn = type(dat.get(d)).__name__\r\n\t\t\t\t\t\tif tn == \"str\":\r\n\t\t\t\t\t\t\tdicStr += fm.format(\"\\\"\",d,\"\\\"\",\":\",\"\\\"\",dat.get(d),\"\\\"\")+\",\"\r\n\t\t\t\t\t\tif tn ==\"float\":\r\n\t\t\t\t\t\t\tdicStr += fm.format(\"\\\"\",d,\"\\\"\",\":\",\"\",dat.get(d),\"\")+\",\"\r\n\t\t\t\t\texcept Exception as ex:\r\n\t\t\t\t\t\tres3.append(ex)\r\n\t\t\t\t\t\tpass\r\n\t\t\t\tres += fmr.format(\"{\",dicStr[:-1],\"}\") +\",\"\t\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\tres2 = fmr.format(\"[\",res[:-1],\"\")+\"]\"\r\n\texcept:\r\n\t\tpass\r\n\treturn res2\r\ndef getTempFilePath(fileName):\r\n\ttempDir = tempfile.gettempdir()\r\n\ttempFP = tempDir + fileName\r\n\treturn tempFP\r\n\r\ndef writeTxtStringToFile(tempFP,path,exDat): #from txt string\r\n\t\"\"\"WRITE \"ONE_LINE\" DATA TO TEMP TXT FILE THEN COPY TO TARGET PATH\"\"\"\r\n\twith open(tempFP,\"w\") as f:\r\n\t\tf.write(exDat.encode('utf8'))\r\n\tcopyfile(tempFP, path)\t\r\n\treturn \"Succeeded\"\r\n\r\n#----------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#----------------------------------------------------------------#\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nsetupUnit(doc)\r\nTransactionManager.Instance.TransactionTaskDone()\r\n#----------------------------------------------------------------#\r\ntry:\r\n\tdata = getElementsInfoDictionary(doc,elements)\r\n\tdataStr = jsonString(data)\r\n\tdebugger.append(\"Here\")\r\n\tpath = revitDir(doc)[0]+revitDir(doc)[1]+'.json'\r\n\tfileName = revitDir(doc)[1]+'.json'\r\n\ttempfilepath = getTempFilePath(fileName)\r\n\tfilepath = revitDir(doc)[0]+revitDir(doc)[1]+'.json'\r\n\r\n\twriteTxtStringToFile(tempfilepath,filepath,dataStr)\r\n\r\n\ttime_end= time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\tOUT = \"Succeeded\",time_start,time_end ,debugger# cates,getAllElementsOfCategories(cates, doc),debugger,\r\n\r\nexcept Exception as ex:\r\n\tdebugger.append(ex)\r\n\ttime_end= time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\tOUT = elements, \"Fail\",time_start,time_end, debugger\r\n\r\n\r\n",
+      "VariableInputPorts": true,
+      "Id": "5b168ba7b5cc44b299d0a5a3882e14e0",
+      "Inputs": [
+        {
+          "Id": "aa1540135b7c4a81a3d6f786eff4863e",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "be8e2fe09bb248358069f1a93fd163a6",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "e296fbf4943043f7a699a48a92bc15f6",
+      "Inputs": [
+        {
+          "Id": "866b3c4acf3c40e5b3909a91e0f6dbcc",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "20ef75643b164ae7b75aa930df4d4015",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "1ad74e07e0f64eba98658997f6146a12",
+      "End": "aa1540135b7c4a81a3d6f786eff4863e",
+      "Id": "79cc0db3d66d46e8ae0ae9f262b5ac7f"
+    },
+    {
+      "Start": "be8e2fe09bb248358069f1a93fd163a6",
+      "End": "866b3c4acf3c40e5b3909a91e0f6dbcc",
+      "Id": "a9b9a0a55ab045cfb62eeabf9e8891fe"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "b9d335f744e843258d5dcc898f7f3815",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -344.21497442055374,
+        "Y": 391.81594180988327
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script- Write Element Properties",
+        "Id": "5b168ba7b5cc44b299d0a5a3882e14e0",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 17.999915408174758,
+        "Y": 323.15018046858751
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "e296fbf4943043f7a699a48a92bc15f6",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 356.44081388349105,
+        "Y": 367.53257897264831
+      }
+    ],
+    "Annotations": [],
+    "X": 477.48910999539038,
+    "Y": -193.40356175811092,
+    "Zoom": 0.76084963584231513
+  }
+}

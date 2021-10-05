@@ -17,7 +17,11 @@ from RevitServices.Transactions import TransactionManager
 from System.Collections.Generic import *
 
 import Autodesk.Revit.DB.JoinGeometryUtils as JGU
+
+import time
 #----------------------------------------------------------------#
+
+time_start = time.strftime("%y%m%d %H:%M:%S",time.localtime(time.time()))
 
 debugger = []
 
@@ -25,8 +29,7 @@ def calculate_col_vol(column):
 	global debugger
 	param_write = column.LookupParameter(param_write_name)	
 	if param_write.StorageType == StorageType.String:		
-		volume = round(column.LookupParameter("Volume").AsDouble()*0.0283168,3)	
-		
+		volume = round(column.LookupParameter("Volume").AsDouble()*0.0283168,3)			
 		try:	
 			intersect_elements = []	
 			for cat in cats_2:
@@ -41,8 +44,7 @@ def calculate_col_vol(column):
 				except Exception as ex:
 					debugger.append(ex)
 					pass
-			min_elevation = min(elevations)
-			
+			min_elevation = min(elevations)			
 			
 			b_box = column.get_BoundingBox(doc.ActiveView)
 			e_max = round(b_box.Max.Z * 304.8)
@@ -89,7 +91,7 @@ for column in columns:
 
 TransactionManager.Instance.TransactionTaskDone()
 
-
+time_end= time.strftime("%y%m%d %H:%M:%S",time.localtime(time.time()))
 # OfCategoryId(cat.Id).
 # Assign your output to the OUT variable.
-OUT = debugger#"{0} / {1} Succeeded Calculated and write to their parameter".format(count,len(columns))
+OUT = debugger,time_start,time_end#"{0} / {1} Succeeded Calculated and write to their parameter".format(count,len(columns))
