@@ -1,0 +1,363 @@
+{
+  "Uuid": "4552eb0f-0d5d-4b01-87e9-be3025f48e8e",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Excel_IO-211020",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nfrom System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\nexcel = Excel.ApplicationClass()\r\nexcel.Visible = True \r\n\r\n# makes the Excel application visible to the user \r\n\r\n#workbook = excel.Workbooks.Add() # Add new work book\r\n#worksheet = workbook.Worksheets.Add() # Add new work sheet\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nworkbook = excel.Workbooks.Open(excel_path)\r\n\r\nworksheets = workbook.Worksheets\r\n\r\nsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\r\nrow = 7\r\ncol = 2\r\n\r\n\r\nOUT = [sheet.Cells(i,col).Text for i in range(row)]",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "45ca9cf0d1e84b9ba3c606eb3d6e0dd2",
+      "Inputs": [
+        {
+          "Id": "a8c47b67182a4e698ae13b8e951cd647",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "798db949b8ce4ebd902de59785199ab4",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9a90dfd26d3f4fe58d9ee0e6730d81aa",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "df2b066863144261959bf535ef8eebb6",
+      "Inputs": [
+        {
+          "Id": "1b4b9dcd2ef24dd186548716b48f74ce",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "21ee5c4e2a3e49999d17cb3973384b7b",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSOffice.Data.ExportExcel@string,string,int,int,var[][],bool",
+      "Id": "611a36a21db04d2a8cc3eccffae7a8a2",
+      "Inputs": [
+        {
+          "Id": "39c5b9bf8c0e4a0c91b38ccbbf9bfcab",
+          "Name": "filePath",
+          "Description": "File path to the Microsoft Excel spreadsheet.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3eca3e4f904e4686bdfeb427f1791388",
+          "Name": "sheetName",
+          "Description": "Name of the workseet to write data to.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4acb24a18f9b4f70a562addb90730bbf",
+          "Name": "startRow",
+          "Description": "Start row for writing data. Enter 0 for Row 1, 1 for Row 2, etc.\n\nint",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4b28fd85520d483ea0e18e0148c6286a",
+          "Name": "startCol",
+          "Description": "Start column for writing data. Enter 0 for Column A, 1 for Column B, etc.\n\nint",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "1fa29675b37e4cdd8e7f63216415a5fb",
+          "Name": "data",
+          "Description": "Data to write to the spreadsheet.\n\nvar[][]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6e2c9c22e6044dfab2b77902708063dd",
+          "Name": "overWrite",
+          "Description": "bool\nDefault value : false",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "16b4ea25858943e3ad998d96f4c2aed5",
+          "Name": "data",
+          "Description": "Data written to the spreadsheet.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Write data to a Microsoft Excel spreadsheet. Data is written by row with sublists to be written in successive rows. Rows and columns are zero-indexed; for example, the value in the data list at [0,0] will be written to cell A1. Null values and empty lists are written to Excel as empty cells. This node requires Microsoft Excel to be installed.\n\nData.ExportExcel (filePath: string, sheetName: string, startRow: int, startCol: int, data: var[][], overWrite: bool = false): var[][]"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSOffice.Data.ImportExcel@var,string,bool,bool",
+      "Id": "13113420bf2846a99cbb63474e106e7e",
+      "Inputs": [
+        {
+          "Id": "be3fd25d4e6047ef87790c1d459a4f16",
+          "Name": "file",
+          "Description": "File representing the Microsoft Excel spreadsheet.\n\nvar",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a4c5889ecad34c0e9971c3535d326fc2",
+          "Name": "sheetName",
+          "Description": "Name of the worksheet containing the data.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "060eff2320394584ae226b4b76cd84d7",
+          "Name": "readAsStrings",
+          "Description": "Toggle to switch between reading Excel file as strings.\n\nbool\nDefault value : false",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "411d708923bd4b8ba54b78776c51cf99",
+          "Name": "showExcel",
+          "Description": "Toggle to switch between showing and hiding the main Excel window.\n\nbool\nDefault value : true",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "f91cd1b09e5e46e19c220cd8b13fcdb3",
+          "Name": "data",
+          "Description": "Rows of data from the Excel worksheet.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Read data from a Microsoft Excel spreadsheet. Data is read by row and returned in a series of lists by row. Rows and columns are zero-indexed; for example, the value in cell A1 will appear in the data list at [0,0]. This node requires Microsoft Excel to be installed.\n\nData.ImportExcel (file: var, sheetName: string, readAsStrings: bool = false, showExcel: bool = true): var[][]"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\excel_IO\\Book1.xlsx",
+      "Id": "daa6e13828fc45a38d9422fea42a59fa",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "aa914df5cd22478f8a9b0f2c44b1355c",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Sheet1",
+      "Id": "05dce35fccbb44d38707b4b237342142",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "1fa6e614120f4924adaf1852ac977a6d",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "9a90dfd26d3f4fe58d9ee0e6730d81aa",
+      "End": "1b4b9dcd2ef24dd186548716b48f74ce",
+      "Id": "55e1c3ca65eb4703af6a914225142692"
+    },
+    {
+      "Start": "aa914df5cd22478f8a9b0f2c44b1355c",
+      "End": "a8c47b67182a4e698ae13b8e951cd647",
+      "Id": "f1278ed98f5e4f3c955b4fda8f87b69f"
+    },
+    {
+      "Start": "1fa6e614120f4924adaf1852ac977a6d",
+      "End": "798db949b8ce4ebd902de59785199ab4",
+      "Id": "75cd519538414565a12843e9886a6442"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.10.0.3455",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "45ca9cf0d1e84b9ba3c606eb3d6e0dd2",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -110.27651187963352,
+        "Y": 192.73237970686159
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "df2b066863144261959bf535ef8eebb6",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 182.72243295588851,
+        "Y": 69.346923330976736
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Data.ExportExcel",
+        "Id": "611a36a21db04d2a8cc3eccffae7a8a2",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 647.68489577664013,
+        "Y": 237.62503640769108
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Data.ImportExcel",
+        "Id": "13113420bf2846a99cbb63474e106e7e",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -150.54548743789542,
+        "Y": 422.47872781665581
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "daa6e13828fc45a38d9422fea42a59fa",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -418.40512476772142,
+        "Y": 117.10197337568471
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "05dce35fccbb44d38707b4b237342142",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -411.19777942300925,
+        "Y": 292.344476298469
+      }
+    ],
+    "Annotations": [],
+    "X": 324.009760734345,
+    "Y": 193.87631270630868,
+    "Zoom": 0.76152673577534369
+  }
+}

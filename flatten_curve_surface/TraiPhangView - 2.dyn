@@ -1,0 +1,913 @@
+{
+  "Uuid": "854723db-d663-4f3d-98b7-4e28bea78701",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "TraiPhangView - 2",
+  "ElementResolver": {
+    "ResolutionMap": {
+      "Math": {
+        "Key": "DSCore.Math",
+        "Value": "DSCoreNodes.dll"
+      },
+      "Line": {
+        "Key": "Autodesk.DesignScript.Geometry.Line",
+        "Value": "ProtoGeometry.dll"
+      },
+      "Element": {
+        "Key": "Revit.Elements.Element",
+        "Value": "RevitNodes.dll"
+      },
+      "Curve": {
+        "Key": "Autodesk.DesignScript.Geometry.Curve",
+        "Value": "ProtoGeometry.dll"
+      },
+      "PolyCurve": {
+        "Key": "Autodesk.DesignScript.Geometry.PolyCurve",
+        "Value": "ProtoGeometry.dll"
+      }
+    }
+  },
+  "Inputs": [
+    {
+      "Id": "14f466e13c12456699db2b7f07a23844",
+      "Name": "Số đoạn chia, (càng nhiều càng chính xác)",
+      "Type": "number",
+      "Value": "6",
+      "MaximumValue": 8.0,
+      "MinimumValue": 1.0,
+      "StepValue": 1.0,
+      "NumberType": "Integer",
+      "Description": "A slider that produces integer values."
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "e11a3ff3c9714921a57f6cff3f6dd6ea",
+      "Name": "Watch",
+      "Type": "unknown",
+      "InitialValue": "",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n# Import RevitNodes\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.Element as EL\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\ncurves_main = IN[0]\r\nseg_length = IN[1]\r\nseg_count = IN[2]\r\n\r\nif not curves_main.__class__.__name__ == \"list\":\r\n\tcurves_main = [curves_main]\r\ncurves_main = [c for c in curves_main if c.__class__.__name__ == \"ModelCurve\"]\r\npoly_curve = PolyCurve.ByJoinedCurves([c.Curves[0] for c in curves_main])\r\nlength = poly_curve.Length\r\ncurves = PolyCurve.Curves(poly_curve)\r\n\r\n\r\npoints = []\r\nfor c in curves:\r\n\ttry:\r\n\t\tseg = c.Length / int(seg_count)\r\n\t\tpoints.append(c.StartPoint)\r\n\t\tpoints.extend(Curve.PointsAtChordLengthFromPoint(c,c.StartPoint,seg))\r\n\t\tpoints.append(c.EndPoint)\r\n\texcept:\r\n\t\tpass\r\n\r\n\r\n# Assign your output to the OUT variable.\r\nOUT = poly_curve,length,curves,points",
+      "VariableInputPorts": true,
+      "Id": "8b7c4a8479234226abd4f49779a99dae",
+      "Inputs": [
+        {
+          "Id": "461ac912698a4243b5bfdf40b2a93c0c",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3a94775d61f04ac080cfd9c6b466370e",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8df2072df3b341d78ef262c189126316",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "199af1a3ddcd4683bf38c1df2affedec",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "be6bc3c0-c639-4f0e-a0cb-000189285f93-000586e3",
+        "be6bc3c0-c639-4f0e-a0cb-000189285f93-0005874f",
+        "be6bc3c0-c639-4f0e-a0cb-000189285f93-000587c8",
+        "be6bc3c0-c639-4f0e-a0cb-000189285f93-00058804"
+      ],
+      "Id": "28072f94159d46e9b92585af934b88ca",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6ba14f59a7264342a77226dcf040fb22",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.SelectEdges, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "52f3230b-0785-4672-9762-85626c298298-000591b8:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591b9:484:LINEAR",
+        "52f3230b-0785-4672-9762-85626c298298-000591c6:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591c7:485:LINEAR",
+        "52f3230b-0785-4672-9762-85626c298298-000591d4:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591d5:510:LINEAR",
+        "52f3230b-0785-4672-9762-85626c298298-000591db:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591dc:199:LINEAR",
+        "52f3230b-0785-4672-9762-85626c298298-000591e2:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591e3:527:LINEAR"
+      ],
+      "Id": "702812d076a64462afc186e9d94ad452",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f3314da2c3b041739b45929a1665234a",
+          "Name": "Curves",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n# clr.AddReference('RevitAPI')\r\n# from Autodesk.Revit.DB import *\r\n# clr.AddReference('RevitAPIUI')\r\n# from Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\n# clr.ImportExtensions(Revit.Elements)\r\n# clr.AddReference(\"RevitServices\")\r\n# import RevitServices\r\n# from RevitServices.Persistence import DocumentManager\r\n# from RevitServices.Transactions import TransactionManager\r\n# from System.Collections.Generic import *\r\n\r\n# import Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\n\r\n\r\n\r\ndef flat_curves(curves_main,seg_count,at_start):\r\n\tcurves_flat = []\r\n\traw_points = []\r\n\tpoints_flat = []\r\n\tdetail_curves = []\r\n\tdetail_points = []\r\n\tL_sum = 0 # độ dài cộng dồn\r\n\r\n\tfor c in curves_main:\r\n\t\ttry:\r\n\t\t\t# at start\r\n\t\t\tat_start_p = Curve.PointAtParameter(at_start,0.5)\r\n\r\n\t\t\tL = c.Length\r\n\t\t\tc_start = c.StartPoint\r\n\t\t\tc_end = c.EndPoint\r\n\t\t\t\r\n\t\t\t# chia doan\r\n\t\t\tpoints = []\r\n\t\t\t\r\n\t\t\tseg = L / int(seg_count)\t\t\t\r\n\t\t\tpoints.append(c_start)\r\n\t\t\tdiv_p = Curve.PointsAtChordLengthFromPoint(c,c.StartPoint,seg)\r\n\t\t\tpoints.extend(div_p)\r\n\t\t\tpoints.append(c_end)\r\n\t\t\tdebugger = [Curve.ParameterAtPoint(c,p) for p in points]\r\n\r\n\t\t\tif round(Curve.ParameterAtPoint(c,points[-2]),2) == 1: #tiny_line.Length < 10:\r\n\t\t\t\tpoints = points[:-1]\r\n\t\t\t# Kiem tra hướng\r\n\t\t\tif Line.ByStartPointEndPoint(points[0],at_start_p).Length > Line.ByStartPointEndPoint(points[-1],at_start_p).Length: # check huong\r\n\t\t\t\tpoints.reverse() # dao nguoc danh sach\t\t\t\r\n\t\t\t\r\n\t\t\traw_points.append(points)\t\t\t\r\n\t\t\t# flatten points\t\t\r\n\t\t\tfor p in points:\r\n\t\t\t\tpoints_flat.append(Point.ByCoordinates(p.X,p.Z,0))\r\n\r\n\t\t\t# try:\t\t\r\n\t\t\t# \tc_flat = PolyCurve.ByPoints(points_flat)\r\n\t\t\t# except:\r\n\t\t\t# \tc_flat = Line.ByStartPointEndPoint(points_flat[0],points_flat[-1])\r\n\t\t\tc_flat = PolyCurve.ByPoints(points_flat)\r\n\t\t\t# L_flat = c_flat.Length\r\n\t\t\t\r\n\t\t\td_points = []\r\n\t\t\tfor i in range(len(points_flat)):\r\n\t\t\t\ttry:\r\n\t\t\t\t\tp = points[i]\r\n\t\t\t\t\tpf = points_flat[i]\r\n\t\t\t\t\td_points.append(Point.ByCoordinates(Curve.ParameterAtPoint(c_flat,pf)*c_flat.Length,p.Z))\t\r\n\t\t\t\texcept:\r\n\t\t\t\t\tpass\t\t\t\t\r\n\t\t\t\r\n\t\t\tdetail_points.append(d_points)\r\n\t\t\t\r\n\t\t\t# cộng dồn độ dài\t\t\r\n\t\t\tL_sum += L_flat\r\n\t\t\tL_flat = 0\r\n\t\texcept Exception as ex:\r\n\t\t\tdetail_points.append(ex)\r\n\t\t\tpass\r\n\treturn debugger,at_start_p,raw_points,detail_points\r\ndef flat_curve(c,seg_count):\r\n\tglobal raw_points,detail_points,at_start_p,L_sum,params\r\n\ttry:\t\t\r\n\t\tL = c.Length\r\n\t\tc_start = c.StartPoint\r\n\t\tc_end = c.EndPoint\t\t\r\n\t\t# chia doan\r\n\t\tpoints = []\t\t\r\n\t\tseg = L / int(seg_count)\t\t\t\r\n\t\tpoints.append(c_start)\r\n\t\tdiv_p = Curve.PointsAtChordLengthFromPoint(c,c.StartPoint,seg)\r\n\t\tpoints.extend(div_p)\r\n\t\tpoints.append(c_end)\t\t\r\n\r\n\t\tif round(Curve.ParameterAtPoint(c,points[-2]),2) == 1: #tiny_line.Length < 10:\r\n\t\t\tpoints = points[:-1]\r\n\t\t# Kiem tra hướng\r\n\t\tif Line.ByStartPointEndPoint(points[0],at_start_p).Length > Line.ByStartPointEndPoint(points[-1],at_start_p).Length: # check huong\r\n\t\t\tpoints.reverse() # dao nguoc danh sach\t\t\t\r\n\t\t\r\n\t\traw_points.append(points)\t\t\t\r\n\t\t# flatten points\t\t\r\n\t\tpoints_flat = []\r\n\t\tfor p in points:\r\n\t\t\tpoints_flat.append(Point.ByCoordinates(p.X,p.Z,0))\r\n\t\t# try:\t\t\r\n\t\t# \tc_flat = PolyCurve.ByPoints(points_flat)\r\n\t\t# except:\r\n\t\t# \tc_flat = Line.ByStartPointEndPoint(points_flat[0],points_flat[-1])\r\n\t\tc_flat = PolyCurve.ByPoints(points_flat)\r\n\t\tL_flat = c_flat.Length\r\n\t\t\r\n\t\td_points = []\r\n\t\tparam_at_curve = []\r\n\t\tfor i in range(len(points_flat)):\r\n\t\t\ttry:\r\n\t\t\t\tp = points[i]\r\n\t\t\t\tpf = points_flat[i]\r\n\t\t\t\td_points.append(Point.ByCoordinates(L_sum + Curve.ParameterAtPoint(c_flat,pf)*L_flat, p.Z))\t\r\n\t\t\t\tparam_at_curve.append(Curve.ParameterAtPoint(c_flat,pf))\r\n\t\t\texcept:\r\n\t\t\t\tpass\t\t\t\t\r\n\t\tparams.append(param_at_curve)\r\n\t\tdetail_points.append(d_points)\r\n\t\t\r\n\t\t# cộng dồn độ dài\t\t\r\n\t\tL_sum += L_flat\r\n\t\tL_flat = 0\r\n\texcept Exception as ex:\r\n\t\tdetail_points.append(ex)\r\n\t\tpass\r\n\treturn d_points\r\n\r\ndef process_curve(c,seg_count):\r\n\tglobal raw_points,at_start_p\r\n\ttry:\t\t\r\n\t\tL = c.Length\r\n\t\tc_start = c.StartPoint\r\n\t\tc_end = c.EndPoint\t\t\r\n\t\t# chia doan\r\n\t\tpoints = []\t\t\r\n\t\tseg = L / int(seg_count)\t\t\t\r\n\t\tpoints.append(c_start)\r\n\t\tdiv_p = Curve.PointsAtChordLengthFromPoint(c,c.StartPoint,seg)\r\n\t\tpoints.extend(div_p)\r\n\t\tpoints.append(c_end)\r\n\t\tif round(Curve.ParameterAtPoint(c,points[-2]),2) == 1: #tiny_line.Length < 10:\r\n\t\t\tpoints = points[:-1]\r\n\t\t# Kiem tra hướng\r\n\t\tif Line.ByStartPointEndPoint(points[0],at_start_p).Length > Line.ByStartPointEndPoint(points[-1],at_start_p).Length: # check huong\r\n\t\t\tpoints.reverse() # dao nguoc danh sach\t\t\r\n\t\treturn points\r\n\texcept Exception as ex:\r\n\t\tpass\t\r\ndef flatten_poly_curve(poly_c,flatten_poly_c,panel_width):\r\n\tFL = flatten_poly_c.Length\r\n\r\n\tFC_start = flatten_poly_c.StartPoint\r\n\tFC_end = flatten_poly_c.EndPoint\r\n\t\r\n\t# chia doan\r\n\tF_points = []\t\t\r\n\tpanel_width = float(panel_width)\r\n\tF_points.append(FC_start)\r\n\tdiv_p = Curve.PointsAtChordLengthFromPoint(flatten_poly_c,FC_start,panel_width)\r\n\tF_points.extend(div_p)\r\n\tF_points.append(FC_end)\r\n\r\n\ttry:\r\n\t\tif round(Curve.ParameterAtPoint(flatten_poly_c,F_points[-2]),2) == 1: #tiny_line\r\n\t\t\tF_points = F_points[:-1]\r\n\texcept:\r\n\t\tpass\r\n\r\n\tpoints_on_polycurve = []\r\n\tfor p in F_points:\r\n\t\ttry:\r\n\t\t\tvec = Vector.ByCoordinates(0,0,1)\r\n\t\t\tpp = Point.Project(p,poly_c,vec)\r\n\t\t\tif pp == None:\r\n\t\t\t\tvec = Vector.ByCoordinates(0,0,-1)\r\n\t\t\t\tpp = Point.Project(p,poly_c,vec)\r\n\t\t\tpoints_on_polycurve.append(pp)\r\n\t\texcept:\r\n\t\t\tpass\r\n\t\r\n\td_points = []\r\n\tfor i in range(len(F_points)):\r\n\t\ttry:\r\n\t\t\tp = points_on_polycurve[i][0]\r\n\t\t\tpf = F_points[i]\r\n\t\t\td_points.append(Point.ByCoordinates(i*panel_width,p.Z))\t\r\n\t\texcept Exception as ex:\r\n\t\t\td_points.append(ex)\r\n\t\t\tpass\t\r\n\t\r\n\treturn PolyCurve.ByPoints(d_points)\r\n# Assign your output to the OUT variable.\r\n\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\ncurves_main = IN[0]\r\nat_start = IN[1] # curve\r\nseg_count = IN[2]\r\npanel_width  = IN[3]\r\n\r\nif not curves_main.__class__.__name__ == \"list\":\r\n\tcurves_main = [curves_main]\r\n# at start\r\nat_start_p = Curve.PointAtParameter(at_start,0.5)\r\n\r\ncurves_flat = []\r\nraw_points = []\r\ndetail_curves = []\r\ndetail_points = []\r\nL_sum = 0 # độ dài cộng dồn\r\nparams = []\r\n\r\nfor c in curves_main:\r\n\tif curves_main.index(c) == len(curves_main)-1:\r\n\t\traw_points.extend(process_curve(c,seg_count))\r\n\telse:\r\n\t\traw_points.extend(process_curve(c,seg_count)[:-1])\r\n\r\npoly_c = PolyCurve.ByPoints(raw_points)\r\nflatten_poly_c = Curve.PullOntoPlane(poly_c,Plane.XY())\r\n\r\n\r\nOUT = flatten_poly_curve(poly_c,flatten_poly_c,panel_width)# raw_points ,poly_c,flatten_poly_c",
+      "VariableInputPorts": true,
+      "Id": "e213588475e547dc89d3a5e282e38f17",
+      "Inputs": [
+        {
+          "Id": "975339f2b0bc487a9bacdbb877860e8e",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "713a9e2ace0c439eac5f75ee080d2f89",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6253ab3e1b8c414ca8eb5af6f42ec6dc",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "24bc9dcdd782472a9df3658129f4d0c6",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6947541757cc42d3a55933f7e8df1b8c",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "60e7ce591b3844a393b9fb8f70ef90ee",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "InputValue": 1220.0,
+      "Id": "e8c315ba0d624389a188b6fcd6aee942",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6a6ed9466dc046fe979e6a313050dfef",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a number."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Revit.Elements.Views.DraftingView.ByName@string",
+      "Id": "4042200569ad43728c46e93f0aff1d36",
+      "Inputs": [
+        {
+          "Id": "3d226b4f47b3476aa3e452d71c8390af",
+          "Name": "name",
+          "Description": "Name of the view\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5a40d2793fe440a1ae927720982deaa4",
+          "Name": "DraftingView",
+          "Description": "The view",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Create a Revit DraftingView given it's name\n\nDraftingView.ByName (name: string): DraftingView"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Revit.Elements.DetailCurve.ByCurve@Revit.Elements.Views.View,Autodesk.DesignScript.Geometry.Curve",
+      "Id": "77876d27f9434f46bdf6e8785ce877c7",
+      "Inputs": [
+        {
+          "Id": "d1e8f3af0ac546a19a9f99770c3d8095",
+          "Name": "view",
+          "Description": "View to place the detail curve on\n\nView",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "01e729061be94d398027163470beca44",
+          "Name": "curve",
+          "Description": "Curve to create detailcurve from\n\nCurve",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "709ce1cbf6a34cbbb0d5034c7d9cd30b",
+          "Name": "DetailCurve",
+          "Description": "DetailCurve",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Construct a Revit DetailCurve element from a curve\n\nDetailCurve.ByCurve (view: View, curve: Curve): DetailCurve"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.ByCoordinates@double,double",
+      "Id": "5aefe3de3ad9470dbc75326699c41031",
+      "Inputs": [
+        {
+          "Id": "b78df16431bd49d2ae573f1264b13c6d",
+          "Name": "x",
+          "Description": "double\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a87eac0ff3ee44bfa9ce87e370503dba",
+          "Name": "y",
+          "Description": "double\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "f7ee69cd80024748bd10d37318a7992c",
+          "Name": "Point",
+          "Description": "Point",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Form a Point in the XY plane given two 2 cartesian coordinates. The Z component is 0.\n\nPoint.ByCoordinates (x: double = 0, y: double = 0): Point"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Point.ByCoordinates@double,double",
+      "Id": "606e004946e54b45af98818359332400",
+      "Inputs": [
+        {
+          "Id": "4e3b802ae9324d2c84b32a008eabbcfb",
+          "Name": "x",
+          "Description": "double\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2668c536203847dca9d9096512b4f14e",
+          "Name": "y",
+          "Description": "double\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "cd175c3eaa6b4da8acf70d97d247651a",
+          "Name": "Point",
+          "Description": "Point",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Form a Point in the XY plane given two 2 cartesian coordinates. The Z component is 0.\n\nPoint.ByCoordinates (x: double = 0, y: double = 0): Point"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "0;\n-9000;",
+      "Id": "02d2895c3a584878b8bd22dfa71c667b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "ac8302025a2c4a40b5954edc2af0f7b3",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2a7deeeb515843bd99f400516c834d19",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Autodesk.DesignScript.Geometry.Line.ByStartPointEndPoint@Autodesk.DesignScript.Geometry.Point,Autodesk.DesignScript.Geometry.Point",
+      "Id": "8930e8a14f49410082465334e9a608ba",
+      "Inputs": [
+        {
+          "Id": "b33ef4a8ba644049b0ef03b5166b6ba5",
+          "Name": "startPoint",
+          "Description": "Point",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "457c531481dd4d13bc4563783097a7f6",
+          "Name": "endPoint",
+          "Description": "Point",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5106e18f1cf741ad8f99ff69a1dfb081",
+          "Name": "Line",
+          "Description": "Line",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Creates a straight Line between two input Points.\n\nLine.ByStartPointEndPoint (startPoint: Point, endPoint: Point): Line"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "InputValue": 1220.0,
+      "Id": "711228dea63540f4ae2996b462f93571",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "7ce8666fb9654bc8a99005e545bdee94",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a number."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.IntegerSlider, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Integer",
+      "InputValue": 6,
+      "MaximumValue": 8,
+      "MinimumValue": 1,
+      "StepValue": 1,
+      "Id": "14f466e13c12456699db2b7f07a23844",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9b978db63560457098d124bb73c0c238",
+          "Name": "",
+          "Description": "Int32",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces integer values."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "eefb2a214f8042cb9a3bdee0938eb20c",
+      "Inputs": [
+        {
+          "Id": "2301c1316ba442afb2c07d64c6ec48d5",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "04ded2d66d9742e88006a0c0f5903856",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "e11a3ff3c9714921a57f6cff3f6dd6ea",
+      "Inputs": [
+        {
+          "Id": "db3f7c59d5ab4cb2b74ae1ac336ac87a",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a7c43720559f45798f649cda1212ef22",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Test",
+      "Id": "2b4cdde2d2c44e358ce4f34d542400c1",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "40a05401e3444bcba19a81f7e51e1531",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSEdgeSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "52f3230b-0785-4672-9762-85626c298298-000591b8:1:INSTANCE:52f3230b-0785-4672-9762-85626c298298-000591b9:482:LINEAR"
+      ],
+      "Id": "d73a40ef356b4809b79661bed8abddef",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "558107ac4a234e1b9d0920ac9c29bd77",
+          "Name": "Curve",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "199af1a3ddcd4683bf38c1df2affedec",
+      "End": "2301c1316ba442afb2c07d64c6ec48d5",
+      "Id": "7e656679180146c78ed51b34ba44a69c"
+    },
+    {
+      "Start": "6ba14f59a7264342a77226dcf040fb22",
+      "End": "461ac912698a4243b5bfdf40b2a93c0c",
+      "Id": "ea2e16524ee747f18fb6aa92e7a7c829"
+    },
+    {
+      "Start": "f3314da2c3b041739b45929a1665234a",
+      "End": "975339f2b0bc487a9bacdbb877860e8e",
+      "Id": "0167b97cc96649e697464c5acd2e91d5"
+    },
+    {
+      "Start": "60e7ce591b3844a393b9fb8f70ef90ee",
+      "End": "db3f7c59d5ab4cb2b74ae1ac336ac87a",
+      "Id": "73e183508c82414c94ccbe31db8f550b"
+    },
+    {
+      "Start": "6a6ed9466dc046fe979e6a313050dfef",
+      "End": "3a94775d61f04ac080cfd9c6b466370e",
+      "Id": "9b96ba1133214857bd192cfaacf4028e"
+    },
+    {
+      "Start": "6a6ed9466dc046fe979e6a313050dfef",
+      "End": "24bc9dcdd782472a9df3658129f4d0c6",
+      "Id": "a2300034906b4359ac11e11e2308f65e"
+    },
+    {
+      "Start": "5a40d2793fe440a1ae927720982deaa4",
+      "End": "d1e8f3af0ac546a19a9f99770c3d8095",
+      "Id": "88b0f83864ab49c494925ad237485c50"
+    },
+    {
+      "Start": "f7ee69cd80024748bd10d37318a7992c",
+      "End": "b33ef4a8ba644049b0ef03b5166b6ba5",
+      "Id": "51bbeaff655b4b4ebd2759dd4ef2737f"
+    },
+    {
+      "Start": "cd175c3eaa6b4da8acf70d97d247651a",
+      "End": "457c531481dd4d13bc4563783097a7f6",
+      "Id": "77da6ba4b0964278b5f80e1f33219e25"
+    },
+    {
+      "Start": "ac8302025a2c4a40b5954edc2af0f7b3",
+      "End": "b78df16431bd49d2ae573f1264b13c6d",
+      "Id": "70a436885d9d4db4a62b79b4f924bdb8"
+    },
+    {
+      "Start": "ac8302025a2c4a40b5954edc2af0f7b3",
+      "End": "a87eac0ff3ee44bfa9ce87e370503dba",
+      "Id": "9aaf5b606406458a89e17c64177a33b2"
+    },
+    {
+      "Start": "2a7deeeb515843bd99f400516c834d19",
+      "End": "4e3b802ae9324d2c84b32a008eabbcfb",
+      "Id": "2e3b8fab2c9e456e80224e23d5bfdaff"
+    },
+    {
+      "Start": "2a7deeeb515843bd99f400516c834d19",
+      "End": "2668c536203847dca9d9096512b4f14e",
+      "Id": "4440fd14bbf64ccbb3df79570399ba68"
+    },
+    {
+      "Start": "5106e18f1cf741ad8f99ff69a1dfb081",
+      "End": "01e729061be94d398027163470beca44",
+      "Id": "f8cfbe70263f441b88d3f1fb2539b093"
+    },
+    {
+      "Start": "7ce8666fb9654bc8a99005e545bdee94",
+      "End": "6947541757cc42d3a55933f7e8df1b8c",
+      "Id": "b484d0ab2c1044f7b7736689aa9a3e89"
+    },
+    {
+      "Start": "9b978db63560457098d124bb73c0c238",
+      "End": "8df2072df3b341d78ef262c189126316",
+      "Id": "9596bc7a1dcc4e61b6e28f8508e813bd"
+    },
+    {
+      "Start": "9b978db63560457098d124bb73c0c238",
+      "End": "6253ab3e1b8c414ca8eb5af6f42ec6dc",
+      "Id": "2aeedb5f79aa441390882faba6cebdc1"
+    },
+    {
+      "Start": "40a05401e3444bcba19a81f7e51e1531",
+      "End": "3d226b4f47b3476aa3e452d71c8390af",
+      "Id": "73e5fba44c6c49f496148ce67ceb9687"
+    },
+    {
+      "Start": "558107ac4a234e1b9d0920ac9c29bd77",
+      "End": "713a9e2ace0c439eac5f75ee080d2f89",
+      "Id": "b33ff36ff6e848ec874de6cf4b97778e"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 10000.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -2539.4559399084137,
+      "EyeY": 29392.203408913811,
+      "EyeZ": -65537.012709591363,
+      "LookX": 24288.108471358257,
+      "LookY": -28549.603386323426,
+      "LookZ": 25764.33531882066,
+      "UpX": 0.30607089545572536,
+      "UpY": 0.89493436160214812,
+      "UpZ": 0.32467382921780069
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "8b7c4a8479234226abd4f49779a99dae",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1164.4698829100191,
+        "Y": 56.6722949363334
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "28072f94159d46e9b92585af934b88ca",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": -1610.3703644463126,
+        "Y": -9.1447507437210334
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(1) Chọn Outlines Trên - Lưu ý ko để Section box cắt Outline",
+        "Id": "702812d076a64462afc186e9d94ad452",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1704.0681249931672,
+        "Y": 418.65642622766694
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "e213588475e547dc89d3a5e282e38f17",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1130.1472303326896,
+        "Y": 450.44366210238854
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Độ Rộng Panel",
+        "Id": "e8c315ba0d624389a188b6fcd6aee942",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1503.4453769527197,
+        "Y": 705.18120330783461
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "DraftingView.ByName",
+        "Id": "4042200569ad43728c46e93f0aff1d36",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1271.8955173195636,
+        "Y": 1209.5066380693531
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "DetailCurve.ByCurve",
+        "Id": "77876d27f9434f46bdf6e8785ce877c7",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -642.37958947936,
+        "Y": 1249.8606714717641
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Point.ByCoordinates",
+        "Id": "5aefe3de3ad9470dbc75326699c41031",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1188.0764263230703,
+        "Y": 1337.7494427801289
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Point.ByCoordinates",
+        "Id": "606e004946e54b45af98818359332400",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1179.2444253921963,
+        "Y": 1486.9168783662763
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "02d2895c3a584878b8bd22dfa71c667b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": -1375.1087232271991,
+        "Y": 1416.7692391403186
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Line.ByStartPointEndPoint",
+        "Id": "8930e8a14f49410082465334e9a608ba",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -996.40876182196234,
+        "Y": 1418.1663236877193
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Độ cao Panel",
+        "Id": "711228dea63540f4ae2996b462f93571",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1499.8842679027816,
+        "Y": 779.65329519500381
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Số đoạn chia, (càng nhiều càng chính xác)",
+        "Id": "14f466e13c12456699db2b7f07a23844",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1631.4394054703432,
+        "Y": 343.59061826044876
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "eefb2a214f8042cb9a3bdee0938eb20c",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -980.6544106370651,
+        "Y": 52.893672063625445
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "e11a3ff3c9714921a57f6cff3f6dd6ea",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "X": -925.08732202297949,
+        "Y": 593.22764709118417
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Tên View Drafting",
+        "Id": "2b4cdde2d2c44e358ce4f34d542400c1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": -1611.5296171181483,
+        "Y": 1163.0762858395656
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "(2) Chọn Edge tại vị trí Mốc  vẽ 2D",
+        "Id": "d73a40ef356b4809b79661bed8abddef",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -1635.99843402722,
+        "Y": 567.52894590482049
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "009a56f05bb34cffa806423cc6c73428",
+        "Title": "",
+        "Nodes": [
+          "e213588475e547dc89d3a5e282e38f17"
+        ],
+        "Left": -1140.1472303326896,
+        "Top": 397.44366210238854,
+        "Width": 144.0,
+        "Height": 250.0,
+        "FontSize": 36.0,
+        "InitialTop": 450.44366210238854,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": 1128.7813262009236,
+    "Y": -206.95007956068491,
+    "Zoom": 0.99498013896957616
+  }
+}

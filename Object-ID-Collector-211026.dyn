@@ -1,0 +1,269 @@
+{
+  "Uuid": "e80e8670-0b77-4f48-85c9-4eae2f28182f",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Object-ID-Collector-211026",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "fc21e987919b4887ab2cdbaa4e632d24",
+      "Name": "Categories",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Columns\r\nStructural Framing\r\nWalls\r\nFloors\r\nRoofs\r\nDoors\r\nWindows\r\nParts",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "8069bf08440740e9aa6d9bb986415954",
+      "Name": "Parameter Name",
+      "Type": "string",
+      "Value": "COF_CON__WorkItemNumber",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Columns\r\nStructural Framing\r\nWalls\r\nFloors\r\nRoofs\r\nDoors\r\nWindows\r\nParts",
+      "Id": "fc21e987919b4887ab2cdbaa4e632d24",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "0527bd2af35947ab90e23ff06759e2d2",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import sys,os,re\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\n\r\n\r\n\r\n#functions\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\texcept Exception as ex:\r\n\t\tpass\r\ndef revitDir(doc):\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\r\n\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\r\ndef getAllElementsOfCategories(doc,cates):\r\n\tglobal debugger\r\n\tcategories = list(doc.Settings.Categories)\r\n\tcategory_names = [c.Name for c in categories]\r\n\telements = []\r\n\tfor cat in cates:\r\n\t\ttry:\r\n\t\t\tif cat in category_names:\r\n\t\t\t\tc = categories[int(category_names.index(cat))]\t\t\t\t\r\n\t\t\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\treturn elements\r\n\r\ndef collector(doc,cates,file_path,file_name):\r\n\telements = getAllElementsOfCategories(doc,cates)\r\n\tfor e in elements:\r\n\t\ttry:\r\n\t\t\tdebugger.append(e.UniqueId)\r\n\t\texcept Exception as ex:\r\n\t\t\tpass\r\n\tcontent = \"\"\r\n\tlist_ = []\r\n\ttry:\r\n\t\tparam = elements[0].LookupParameter(param_name)\r\n\t\tif param.StorageType == StorageType.String:\r\n\t\t\tfor elem in elements:\r\n\t\t\t\ttry:\r\n\t\t\t\t\tpar = elem.LookupParameter(param_name)\t\t\t\t\r\n\t\t\t\t\tif par.AsString() != None:\r\n\t\t\t\t\t\tlist_.append(\"{0}\\t{1}\\t{2}\\t{3}\".format(elem.UniqueId,par.AsString(),file_name,elem.Id))\r\n\t\t\t\texcept:\r\n\t\t\t\t\tpass\r\n\t\t\tcontent = \"\\n\".join(list_)\r\n\texcept:\r\n\t\tpass\r\n\twith open(file_path,\"w\") as f:\r\n\t\tf.write(content)\r\n\treturn elements,list_\r\n\r\n#start\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\nresult = []\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n\r\n#excecute\r\ncates = IN[0].splitlines()\r\nparam_name = IN[1]\r\next_dir_files = IN[2]\r\n\r\nrvt_dir = revitDir(doc)\r\nfile_path = \"{0}{1}.rvt\".format(rvt_dir[0],rvt_dir[1])\r\nfile_name = rvt_dir[1]+\".rvt\"\r\nrevit_id_data_path = \"{0}{1}-Revit-Id-Data.txt\".format(rvt_dir[0],rvt_dir[1])\r\n\r\nelements = None\r\nlist_ = None\r\nif ext_dir_files:\r\n\telements = []\r\n\tlist_  = []\r\n\tdocs = []\r\n\tpatt = re.compile(r\".\\d\\d\\d\\d.\")\t\r\n\tfor p in os.listdir(revitDir(doc)[0]):\r\n\t\tif \"rvt\" in p and len(patt.findall(p)) == 1:\t\r\n\t\t\tfull_path = revitDir(doc)[0]+p\r\n\t\t\tdoc_ = app.OpenDocumentFile(full_path)\r\n\t\t\tdocs.append(doc_)\r\n\t\t\tfile_path = doc_.PathName[:-len(doc_.PathName.split(\".\")[-1])-1]+\".txt\"\r\n\t\t\tfile_name = doc_.PathName.split(\"\\\\\")[-1][:-len(doc_.PathName.split(\"\\\\\")[-1].split(\".\")[-1])-1]\r\n\t\t\telems,l_ = collector(doc_,cates,file_path,file_name)\r\n\t\t\telements.extend(elems)\r\n\t\t\tlist_.extend(l_)\r\nelse:\r\n\telements,list_ = collector(doc,cates,revit_id_data_path,file_name)\r\n\tpass\r\n\r\n\r\n#end\r\ntime_end = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = \"{0}/{1} Succeeded\".format(len(list_),len(elements)),time_start, time_end",
+      "VariableInputPorts": true,
+      "Id": "d4f2b857d999418286ea72f27e0bd6ba",
+      "Inputs": [
+        {
+          "Id": "7db7b5e95f994d4d8c0af9117d93e29c",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "44f22f339b694bd690557c2895ae1658",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "14a3e0c9855b48d6b658ec856d5be841",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6e0e10be96a7487887246aa432da0058",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__WorkItemNumber",
+      "Id": "8069bf08440740e9aa6d9bb986415954",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d3d72a8d53eb4595b0d9efc13015479a",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "16b3cb3803064c6fb230d8cdc52f2af4",
+      "Inputs": [
+        {
+          "Id": "b17ca3e302b54b05880971434706a5f4",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "b3d6e7cbcc5146ac89085c543f8eb44d",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "f838b07d7e5045d1a27f7c6cd3e11a01",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "3119c23c0f4942f9b2562a3f2e7b9e95",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "0527bd2af35947ab90e23ff06759e2d2",
+      "End": "7db7b5e95f994d4d8c0af9117d93e29c",
+      "Id": "d6c5b8b5c8c949cbb9d372645d8359a7"
+    },
+    {
+      "Start": "6e0e10be96a7487887246aa432da0058",
+      "End": "b17ca3e302b54b05880971434706a5f4",
+      "Id": "3f15755816d448fcadae6d43225a9226"
+    },
+    {
+      "Start": "d3d72a8d53eb4595b0d9efc13015479a",
+      "End": "44f22f339b694bd690557c2895ae1658",
+      "Id": "37dc08b45a06478c9c0eb3487d94d2b0"
+    },
+    {
+      "Start": "3119c23c0f4942f9b2562a3f2e7b9e95",
+      "End": "14a3e0c9855b48d6b658ec856d5be841",
+      "Id": "d000822402a14172bc49a778548b9ffc"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.3.0.5885",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Categories",
+        "Id": "fc21e987919b4887ab2cdbaa4e632d24",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 226.0,
+        "Y": 142.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "d4f2b857d999418286ea72f27e0bd6ba",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 487.756242823456,
+        "Y": 243.21801766092995
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter Name",
+        "Id": "8069bf08440740e9aa6d9bb986415954",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 198.5897041937543,
+        "Y": 342.97190152277085
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "16b3cb3803064c6fb230d8cdc52f2af4",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 693.95157920354336,
+        "Y": 219.45092857094758
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Extend to all Revit Files in Directory",
+        "Id": "f838b07d7e5045d1a27f7c6cd3e11a01",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 173.11261838505487,
+        "Y": 426.98284032292395
+      }
+    ],
+    "Annotations": [],
+    "X": -100.63823618927978,
+    "Y": 49.386323895251451,
+    "Zoom": 0.83273793691306541
+  }
+}

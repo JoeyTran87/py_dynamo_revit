@@ -1,0 +1,248 @@
+{
+  "Uuid": "28e6de98-7f3d-48ed-b6c4-e8e1009a5b61",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Script_1",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Function, DynamoCore",
+      "FunctionSignature": "1299d536-feca-47da-a272-5227afe8023c",
+      "FunctionType": "Graph",
+      "NodeType": "FunctionNode",
+      "Id": "c5b068cfa45a4d3eaa469df3eab1693b",
+      "Inputs": [
+        {
+          "Id": "72b3717fec4a45038cc52c6a9006a2dd",
+          "Name": "_epwFile",
+          "Description": " An epw file path on your system as a string.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "7ef095bb574640b6987eb3ce3e89a540",
+          "Name": "location",
+          "Description": " Location data (use this output to construct the sun path).",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "b64e1f8453894564b259213e728ec85d",
+          "Name": "ERRReport",
+          "Description": " Report",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Import location.\r\n-"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.Filename, CoreNodeModels",
+      "HintPath": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\lady_bug\\VNM_Hanoi.488200_IWEC.epw",
+      "InputValue": ".\\VNM_Hanoi.488200_IWEC.epw",
+      "NodeType": "ExtensionNode",
+      "Id": "166f7a735e9044c6856dfd617743725a",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "7af127e5a739498f9f1c6dbe3e32c7fa",
+          "Name": "",
+          "Description": "Filename",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows you to select a file on the system to get its filename"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "c6f60a5fe8e84abfa5e1b9e0b0816d42",
+      "Inputs": [
+        {
+          "Id": "11b0ffd562194a5c852bb42d50de78cd",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "147c1830b47e4f558d57b36f3912f68a",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\lady_bug\\VNM_Hanoi.488200_IWEC.epw",
+      "Id": "80daf081272048c2a342dae041cd40ed",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d0e07c4da587408ebf70f80add9d28b7",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nfrom System import AppDomain, Environment, IO\r\n\r\nclr.AddReference('ProtoGeometry')\r\n_loc = tuple(a.Location for a in AppDomain.CurrentDomain.GetAssemblies() if 'ProtoGeometry' in a.FullName)\r\n\r\n\r\n\r\nOUT = _loc\r\n",
+      "VariableInputPorts": true,
+      "Id": "9dede3a0ade847da9f01ad87805f57d6",
+      "Inputs": [
+        {
+          "Id": "aacff2662a6d4bc9b750e8befe6b3b17",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "18458f4b176147a8bddec1b167a7ee21",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "7ef095bb574640b6987eb3ce3e89a540",
+      "End": "11b0ffd562194a5c852bb42d50de78cd",
+      "Id": "f4042e4752424e4f9c0ec0ceb4e743f2"
+    },
+    {
+      "Start": "d0e07c4da587408ebf70f80add9d28b7",
+      "End": "72b3717fec4a45038cc52c6a9006a2dd",
+      "Id": "f095239cfb0e48c6ae44587b6f126efb"
+    }
+  ],
+  "Dependencies": [
+    "1299d536-feca-47da-a272-5227afe8023c"
+  ],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "Id": "c5b068cfa45a4d3eaa469df3eab1693b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "Import Location",
+        "ShowGeometry": true,
+        "Excluded": false,
+        "X": -39.347858529324128,
+        "Y": 748.71825906597019
+      },
+      {
+        "Id": "166f7a735e9044c6856dfd617743725a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "File Path",
+        "ShowGeometry": true,
+        "Excluded": false,
+        "X": -573.39077421202046,
+        "Y": 799.67937994544423
+      },
+      {
+        "Id": "c6f60a5fe8e84abfa5e1b9e0b0816d42",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "Watch",
+        "ShowGeometry": true,
+        "Excluded": false,
+        "X": 475.45432158283472,
+        "Y": 885.23858598338518
+      },
+      {
+        "Id": "80daf081272048c2a342dae041cd40ed",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "String",
+        "ShowGeometry": true,
+        "Excluded": false,
+        "X": -491.33719862728412,
+        "Y": 945.791302754239
+      },
+      {
+        "Id": "9dede3a0ade847da9f01ad87805f57d6",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "Python Script",
+        "ShowGeometry": true,
+        "Excluded": false,
+        "X": 27.420419430631171,
+        "Y": 1247.9810904756876
+      }
+    ],
+    "Annotations": [],
+    "X": 235.47980844220962,
+    "Y": -632.31297910313606,
+    "Zoom": 1.1713183573076464
+  }
+}
