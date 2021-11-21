@@ -1,0 +1,182 @@
+{
+  "Uuid": "de3ff1ac-2554-4c32-8a6a-a69071c17d30",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "View-Writting-211119",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "MODEL STATISTIC",
+      "Id": "1d3c9ccda7f9480ebc3a455834d00434",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6477b5ae76d84fc1ac844121112a1b9a",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n    global doc    \r\n    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n    try:\r\n\t    view_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t    return view_\r\n    except:\r\n    \treturn\r\n\r\n\r\n\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\n# Place your code below this line\r\nview_  = get_sheet_view_by_search_string(view_name)\r\n\r\ntext_collector = list(FilteredElementCollector(doc,view_.Id).OfClass(TextNote))\r\ndic_text = {}\r\nfor t in text_collector:\r\n    try:\r\n\t    dic_text[str(t.Id)] = []\r\n\t    dic_text[str(t.Id)].append(t.Text.strip().split(\"\\t\"))#GetFormattedText().GetPlainText().strip()\r\n\t    \r\n\t    text_type_border = t.TextNoteType.LookupParameter(\"Leader/Border Offset\").AsDouble()*304.8\r\n\t    dic_text[str(t.Id)].append(\"{:0.0f}\".format(round(t.Width*304.8 + 2*text_type_border)))\r\n    except:\r\n    \tpass\r\n# Assign your output to the OUT variable.\r\nOUT = dic_text",
+      "VariableInputPorts": true,
+      "Id": "45382869e6994866b5308cf4dc3591fc",
+      "Inputs": [
+        {
+          "Id": "f4d397adf98f44c99aef6735fddc3782",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "d9aa91f7a77f468da195efb993345973",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "627a4cda5f7849208324f9d63d418cab",
+      "Inputs": [
+        {
+          "Id": "88557ee461664af4aa1751bb3e500597",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "c87b964c2a244a0495ff9dec5fcdaecd",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "6477b5ae76d84fc1ac844121112a1b9a",
+      "End": "f4d397adf98f44c99aef6735fddc3782",
+      "Id": "898241e7a6404108959bf1bfd4aac92f"
+    },
+    {
+      "Start": "d9aa91f7a77f468da195efb993345973",
+      "End": "88557ee461664af4aa1751bb3e500597",
+      "Id": "a3678a74b5b94f71909a4172d5326496"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "View Name Contains",
+        "Id": "1d3c9ccda7f9480ebc3a455834d00434",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 151.09617336253882,
+        "Y": 158.9366997008392
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "45382869e6994866b5308cf4dc3591fc",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 415.25721290479026,
+        "Y": 129.93742173393375
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "627a4cda5f7849208324f9d63d418cab",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 689.69100588096921,
+        "Y": 107.17261674187489
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "df0f978a29034295be4c56b3d86d0ebe",
+        "Title": "",
+        "Nodes": [
+          "45382869e6994866b5308cf4dc3591fc"
+        ],
+        "Left": 405.25721290479026,
+        "Top": 76.937421733933746,
+        "Width": 144.0,
+        "Height": 146.0,
+        "FontSize": 36.0,
+        "InitialTop": 129.93742173393375,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": -556.47820834546178,
+    "Y": -67.456867870646136,
+    "Zoom": 1.4263916465683206
+  }
+}

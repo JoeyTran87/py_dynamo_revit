@@ -12,7 +12,7 @@
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
-      "Code": "import clr\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nfrom System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\nexcel = Excel.ApplicationClass()\r\nexcel.Visible = True \r\n\r\n# makes the Excel application visible to the user \r\n\r\n#workbook = excel.Workbooks.Add() # Add new work book\r\n#worksheet = workbook.Worksheets.Add() # Add new work sheet\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nworkbook = excel.Workbooks.Open(excel_path)\r\n\r\nworksheets = workbook.Worksheets\r\n\r\nsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\r\nrow = 7\r\ncol = 2\r\n\r\n\r\nOUT = [sheet.Cells(i,col).Text for i in range(row)]",
+      "Code": "import clr, time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\n# from System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nshow_excel = IN[2]\r\n\r\ndebugger = []\r\n\r\n# Excel app đã khởi tạo + chạy ngầm\r\nexcel_app = Excel.ApplicationClass()\r\n# Hiện Excel\r\nexcel_app.Visible = show_excel\r\n\r\n# Duyệt workbooks\r\nworkbook = excel_app.Workbooks\r\n# Mở 1 file excel cụ thể\r\nworkbook = workbook.Open(excel_path)\r\nworksheets = workbook.Worksheets\r\nsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\r\nrow = 7\r\ncolumn = 2\r\n\r\n# write excel:\r\nsheet.Cells(row+2,column).Value = \"Something New\"\r\n\r\n\r\ndic_data = {}\r\nfor r in range(1,row+1):\r\n    try:\r\n        dic_data[str(r)] = [sheet.Cells(r,c).Text for c in range(1,column+1)]\r\n        # debugger.append(sheet.Cells(r,column).Text)\r\n    except:\r\n        pass\r\n\r\nsheet.Cells(r,c)\r\n\r\nOUT = dic_data\r\nworkbook.Close(True,excel_path)\r\n\r\nif not show_excel:\r\n\ttime.sleep(5)\r\n\texcel_app.Quit()",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Id": "45ca9cf0d1e84b9ba3c606eb3d6e0dd2",
@@ -30,6 +30,15 @@
           "Id": "798db949b8ce4ebd902de59785199ab4",
           "Name": "IN[1]",
           "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "1c1fca95c00c4b6f89645bf2541405e3",
+          "Name": "IN[2]",
+          "Description": "Input #2",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -250,6 +259,26 @@
       ],
       "Replication": "Disabled",
       "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "6c934a6c436a413e8fed143f89bb73cd",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d86c6ae7d53e42098926c5053fdb9cb4",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
     }
   ],
   "Connectors": [
@@ -267,6 +296,11 @@
       "Start": "1fa6e614120f4924adaf1852ac977a6d",
       "End": "798db949b8ce4ebd902de59785199ab4",
       "Id": "75cd519538414565a12843e9886a6442"
+    },
+    {
+      "Start": "d86c6ae7d53e42098926c5053fdb9cb4",
+      "End": "1c1fca95c00c4b6f89645bf2541405e3",
+      "Id": "d79f5d0157754324942682a83115add5"
     }
   ],
   "Dependencies": [],
@@ -301,8 +335,8 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -110.27651187963352,
-        "Y": 192.73237970686159
+        "X": -38.837821146692477,
+        "Y": 53.053745587230566
       },
       {
         "ShowGeometry": true,
@@ -311,8 +345,8 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 182.72243295588851,
-        "Y": 69.346923330976736
+        "X": 206.36386122060708,
+        "Y": -33.322170621743638
       },
       {
         "ShowGeometry": true,
@@ -321,8 +355,8 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 647.68489577664013,
-        "Y": 237.62503640769108
+        "X": 30.38058335105643,
+        "Y": 434.48236561314712
       },
       {
         "ShowGeometry": true,
@@ -331,12 +365,12 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -150.54548743789542,
-        "Y": 422.47872781665581
+        "X": -214.74872513428727,
+        "Y": 438.84425899416749
       },
       {
         "ShowGeometry": true,
-        "Name": "String",
+        "Name": "Excel file path",
         "Id": "daa6e13828fc45a38d9422fea42a59fa",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
@@ -346,18 +380,28 @@
       },
       {
         "ShowGeometry": true,
-        "Name": "String",
+        "Name": "Sheet Name",
         "Id": "05dce35fccbb44d38707b4b237342142",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -411.19777942300925,
-        "Y": 292.344476298469
+        "X": -379.72560408164077,
+        "Y": 209.257933397256
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Show Excel",
+        "Id": "6c934a6c436a413e8fed143f89bb73cd",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -382.87416549651266,
+        "Y": 293.25234516580315
       }
     ],
     "Annotations": [],
-    "X": 324.009760734345,
-    "Y": 193.87631270630868,
-    "Zoom": 0.76152673577534369
+    "X": 518.9863616250193,
+    "Y": 304.05588861056509,
+    "Zoom": 0.78033770122794277
   }
 }
