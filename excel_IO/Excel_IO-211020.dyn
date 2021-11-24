@@ -12,7 +12,7 @@
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
-      "Code": "import clr, time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\n# from System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nshow_excel = IN[2]\r\n\r\ndebugger = []\r\n\r\n# Excel app đã khởi tạo + chạy ngầm\r\nexcel_app = Excel.ApplicationClass()\r\n# Hiện Excel\r\nexcel_app.Visible = show_excel\r\n\r\n# Duyệt workbooks\r\nworkbook = excel_app.Workbooks\r\n# Mở 1 file excel cụ thể\r\nworkbook = workbook.Open(excel_path)\r\nworksheets = workbook.Worksheets\r\nsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\r\nrow = 7\r\ncolumn = 2\r\n\r\n# write excel:\r\nsheet.Cells(row+2,column).Value = \"Something New\"\r\n\r\n\r\ndic_data = {}\r\nfor r in range(1,row+1):\r\n    try:\r\n        dic_data[str(r)] = [sheet.Cells(r,c).Text for c in range(1,column+1)]\r\n        # debugger.append(sheet.Cells(r,column).Text)\r\n    except:\r\n        pass\r\n\r\nsheet.Cells(r,c)\r\n\r\nOUT = dic_data\r\nworkbook.Close(True,excel_path)\r\n\r\nif not show_excel:\r\n\ttime.sleep(5)\r\n\texcel_app.Quit()",
+      "Code": "import clr, time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\n# from System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\ndef write_excel(excel_path,sheet_name,row,column,data):\r\n    global debugger\r\n    excel_app = Excel.ApplicationClass()\r\n    excel_app.Visible = show_excel    \r\n    workbook = excel_app.Workbooks.Open(excel_path)\r\n    worksheets = workbook.Worksheets\r\n    sheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n    \r\n\r\n    if data.__class__.__name__ == \"str\":\r\n        sheet.Cells(row,column).Value = data\r\n    \r\n    \r\n    \r\n    workbook.Close(True,excel_path)\r\n\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nshow_excel = IN[2]\r\n\r\ndebugger = []\r\n\r\n\r\n# write excel:\r\nwrite_excel(excel_path,sheet_name,10,10,\"Data\")\r\n\r\n# dic_data = {}\r\n# for r in range(1,row+1):\r\n#     try:\r\n#         dic_data[str(r)] = [sheet.Cells(r,c).Text for c in range(1,column+1)]\r\n#         # debugger.append(sheet.Cells(r,column).Text)\r\n#     except:\r\n#         pass\r\n\r\n\r\nOUT = \"string\".__class__.__name__\r\n\r\n\r\n# if not show_excel:\r\n# \ttime.sleep(5)\r\n# \texcel_app.Quit()",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Id": "45ca9cf0d1e84b9ba3c606eb3d6e0dd2",
@@ -400,8 +400,8 @@
       }
     ],
     "Annotations": [],
-    "X": 518.9863616250193,
-    "Y": 304.05588861056509,
+    "X": 410.9863616250193,
+    "Y": 347.05588861056509,
     "Zoom": 0.78033770122794277
   }
 }
