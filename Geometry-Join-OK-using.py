@@ -37,7 +37,7 @@ def UnjoinElementAlready(e,doc,cat):
 		for ee in joinedElems:
 			JGU.UnjoinGeometry(doc,e,ee)
 			res.append(ee)
-	except Exception, ex:
+	except Exception as ex:
 		res.append(ex)
 		pass
 	return res
@@ -51,7 +51,7 @@ def getJoinElement(e,doc,cat):
 			ee = doc.GetElement(j)
 			if ee.Category.Name == cat:
 				res.append(ee)
-	except Exception, ex:
+	except Exception as ex:
 		res.append(ex)
 		pass
 	return res
@@ -75,13 +75,13 @@ def allElemsIntersectedOfCat(ee,catName,doc):
 			cat = e	
 	try:
 		elems = FilteredElementCollector(doc).OfCategoryId(cat.Id).WherePasses(ElementIntersectsElementFilter(ee))#.WhereElementIsNotElementType()
-	except Exception, ex:
+	except Exception as ex:
 		res.append(ex)
 		pass
 	for eee in elems:
 		try:
 			res.append(eee)
-		except Exception, ex:
+		except Exception as ex:
 			res.append(ex)
 			pass
 	#joined = getJoinElement(ee, doc,catName)

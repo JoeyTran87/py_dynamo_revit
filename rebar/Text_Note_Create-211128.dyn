@@ -1,0 +1,130 @@
+{
+  "Uuid": "3142c60a-280e-4b5d-8f3b-7072f7dc8525",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Text_Note_Create-211128",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\n\r\ndataEnteringNode = IN\r\n\r\ndebugger = []\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n\r\n\r\nviewId = doc.ActiveView.Id\r\nposition = XYZ()\r\ntext = \"Testing Write Text Note\"\r\n\r\ntypeId = list(FilteredElementCollector(doc).OfClass(TextNoteType).WhereElementIsElementType())[0].Id\r\n\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\ntext_note = TextNote.Create(doc,viewId,position,text,typeId = typeId)\r\nTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\r\nOUT = typeId\r\n",
+      "VariableInputPorts": true,
+      "Id": "1f81b966c20d4992846f3c4c0c48e08b",
+      "Inputs": [
+        {
+          "Id": "f4193cd6e58b4996b5384526ac8a5fe8",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9d624c18529541f7affd332eb5f04438",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "4f77c30971ba4610ae0e46b542a22aa0",
+      "Inputs": [
+        {
+          "Id": "63da40a02ecb41dbbc7e9a3c042b4c73",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "c73deee48fc84070a4c0e6e7e9709a65",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "9d624c18529541f7affd332eb5f04438",
+      "End": "63da40a02ecb41dbbc7e9a3c042b4c73",
+      "Id": "5101edb284ba442887970acf4a8bb902"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Automatic",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "1f81b966c20d4992846f3c4c0c48e08b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 404.0,
+        "Y": 140.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "4f77c30971ba4610ae0e46b542a22aa0",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 597.0,
+        "Y": 135.0
+      }
+    ],
+    "Annotations": [],
+    "X": -132.0,
+    "Y": 23.0,
+    "Zoom": 1.0
+  }
+}

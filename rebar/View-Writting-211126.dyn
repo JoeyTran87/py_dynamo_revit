@@ -1,0 +1,165 @@
+{
+  "Uuid": "03144934-aa92-415a-9b08-77c3c6ed11c6",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "View_Sheet_Rebar-211126",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "REBAR INFO",
+      "Id": "00255433f27e4208bc08727ceb745e27",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6f151fb291eb4e0ebe7342edeb98e933",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\n\r\n#----------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n    global doc    \r\n    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n    try:\r\n\t    view_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t    return view_\r\n    except:\r\n    \treturn\r\n#----------------------------------------------------#\r\n#----------------------------------------------------#\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\n\r\ndebugger = []\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n\r\n\r\nview_sheet = get_sheet_view_by_search_string(view_name)\r\nif view_sheet == None:\r\n\ttry:\r\n\t\t# Get an available title block from document\r\n\t\tcollector = list(FilteredElementCollector(doc).OfClass(FamilySymbol).OfCategory(BuiltInCategory.OST_TitleBlocks))\r\n\t\tfs = collector[0]#.FirstElement()\r\n\t\t\r\n\t\tTransactionManager.Instance.EnsureInTransaction(doc)\t\r\n\t\tview_sheet = ViewSheet.Create(doc,fs.Id)\r\n\t\ttry:\r\n\t\t\tview_sheet.SheetNumber = \"000\"\r\n\t\texcept:\r\n\t\t\tview_sheet.SheetNumber = \"000000000000\"\r\n\t\tview_sheet.Name = view_name\r\n\r\n\t\t# Delete Title Block\r\n\t\ttitle_blocks = list(FilteredElementCollector(doc,view_sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).WhereElementIsNotElementType().ToElements())\r\n\t\t[doc.Delete(t.Id) for t in title_blocks]\r\n\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\texcept Exception as ex:\r\n\t\tdebugger.append(ex)\r\n\t\tpass\r\n\r\nOUT =  debugger,view_name",
+      "VariableInputPorts": true,
+      "Id": "baa627e5a696447d9080c83f8d423a16",
+      "Inputs": [
+        {
+          "Id": "41a9b5de4b634e3dbe8cbfb65c2f7554",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "2189e8bc34ce467a895b4edd3460b3c9",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "1e6c15d86ba0413d838f9314e9d96fcd",
+      "Inputs": [
+        {
+          "Id": "03ed9b6d513247018bf12bbecd7d6437",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0455483d012d4e22a3f53b7ab06b3c06",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "6f151fb291eb4e0ebe7342edeb98e933",
+      "End": "41a9b5de4b634e3dbe8cbfb65c2f7554",
+      "Id": "16cad095f31d4070b1fcf37144800e46"
+    },
+    {
+      "Start": "2189e8bc34ce467a895b4edd3460b3c9",
+      "End": "03ed9b6d513247018bf12bbecd7d6437",
+      "Id": "457c9e0a23504883b8d7b33107940d5a"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "SHEET NAME CONTAINS",
+        "Id": "00255433f27e4208bc08727ceb745e27",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 214.0,
+        "Y": 278.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "baa627e5a696447d9080c83f8d423a16",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 458.0,
+        "Y": 244.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "1e6c15d86ba0413d838f9314e9d96fcd",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 655.0,
+        "Y": 251.0
+      }
+    ],
+    "Annotations": [],
+    "X": -178.0,
+    "Y": 22.0,
+    "Zoom": 1.0
+  }
+}
