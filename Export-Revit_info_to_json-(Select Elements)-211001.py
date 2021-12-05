@@ -137,16 +137,20 @@ def getTypePropertiesDic (doc,e): # dictionary type for write JSON
 			pass
 	return dic
 def revitDir(doc):
+	"""
+	dir : directory
+	file_name : Revit file name
+	"""
 	dir = ""
 	try:
 		p = doc.PathName.split("\\")
-		pp = p[0:len(p)-1]
-	
+		pp = p[0:len(p)-1]	
 		for s in pp:
 			dir += s + "\\"
+		file_name = doc.PathName.split("\\")[-1].split(".rvt")[0]	
 	except:
 		pass
-	return dir,doc.PathName.split("\\")[-1].split(".rvt")[0]
+	return dir,file_name
 
 def jsonString(data): # cho trường hợp bị lỗi JSON acsii encoder \u1111	
 	res = ""

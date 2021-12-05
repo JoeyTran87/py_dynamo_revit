@@ -1,0 +1,2050 @@
+{
+  "Uuid": "ff2a0936-a8ee-4c07-a836-907999fe6545",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Rebar-Infomation-211204",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "3a386fba67134c7aa3b64878b8478478",
+      "Name": "Categories",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Columns\r\nStructural Framing\r\nFloors\r\nWalls\r\nParts",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "18f4d0508ba44fd6b4714d60c4b9ef21",
+      "Name": "File Path-Database Rebar Excel file",
+      "Type": "string",
+      "Value": ".\\rebar_data.xlsx",
+      "Description": "Allows you to select a file on the system to get its filename"
+    },
+    {
+      "Id": "cbcba631abc3457c8273df3c87912b7e",
+      "Name": "SHEET NAME",
+      "Type": "string",
+      "Value": "REBAR INFORMATION",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport os, sys, json,clr, tempfile,shutil\r\nfrom shutil import copyfile\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nfrom Autodesk.Revit.DB.Structure import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\n\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\texcept Exception as ex:\r\n\t\tpass\r\n\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\n\r\ndef set_dic(selection):\r\n\telem_dic = {}\r\n\tfor e in selection:\r\n\t\ttry:\r\n\t\t\telem_dic[str(e.Id)] = []\r\n\t\t\telem_dic[str(e.Id)].append(e)\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn elem_dic\r\n\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\ndef revitDir(doc):\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\r\n\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\ndef getAllElementsOfCategories(doc,cates):\r\n\tglobal debugger,categories,category_names\r\n\telements = []\r\n\tfor cat in cates:\r\n\t\ttry:\r\n\t\t\tif cat in category_names:\r\n\t\t\t\tc = categories[int(category_names.index(cat))]\t\t\t\t\r\n\t\t\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\treturn elements\r\n\r\ndef getAllElementsOfCategory(doc,cat):\r\n\tglobal debugger,categories,category_names\r\n\telements = []\r\n\tif cat in category_names:\r\n\t\tc = categories[int(category_names.index(cat))]\t\t\t\t\r\n\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\treturn elements\r\n#----------------------------------------------------------------#\r\n#----------------------------------------------------------------#\r\ndef get_rebar(e):\r\n\t# ALL REBAR IN MODEL\r\n\t# CHECK IF HOST REBAR\r\n\telem_host_rebar = []\r\n\ttry:\r\n\t\trbhd = RebarHostData.GetRebarHostData(e)\r\n\t\trebars = list(rbhd.GetRebarsInHost())\r\n\t\tif rebars:\r\n\t\t\telem_host_rebar.extend(rebars)\r\n\texcept Exception as ex:\r\n\t\t# elem_host_rebar.append(ex)\r\n\t\tpass\r\n\treturn elem_host_rebar\r\n\r\ndef get_rebar_and_host(e):\r\n\t# ALL REBAR IN MODEL\r\n\t# CHECK IF HOST REBAR\r\n\tglobal doc\r\n\telem_host_rebar = []\r\n\ttry:\r\n\t\trbhd = RebarHostData.GetRebarHostData(e)\r\n\t\trebars = list(rbhd.GetRebarsInHost())\r\n\t\tif rebars:\r\n\t\t\telem_host_rebar.extend(rebars)\r\n\texcept Exception as ex:\r\n\t\telem_host_rebar.append(ex)\r\n\t\tpass\r\n\treturn e, elem_host_rebar\r\n\r\ndef rebar_in_system(floor):\r\n\tglobal doc,debugger\r\n\trebars = []\r\n\tfloor_id = floor.Id\r\n\trebar_collector = []\r\n\trebar_collector.extend(list(FilteredElementCollector(doc).OfClass(RebarInSystem).ToElements()))\r\n\t# rebar_collector.extend(list(FilteredElementCollector(doc).OfClass(Rebar).ToElements()))\r\n\tfor r in rebar_collector:\r\n\t\ttry:\r\n\t\t\tif r.GetHostId() == floor_id:\r\n\t\t\t\trebars.append(r)\r\n\t\texcept:\r\n\t\t\tpass\t\t\r\n\treturn rebars\r\n\r\n\r\ndef get_rebar_dic(e):\r\n\t\"\"\"\r\n\t[0] e : Đối tượng chứa Rebar\r\n\t[1] rebar_list :  Danh sách Rebar\r\n\t[2] rb_dic_volume : Dictionary Rebar: Volume\r\n\t[3] rb_dic_weight : Dictionary Rebar: Weight\r\n\t[4] rb_dic_length : Dictionary Rebar: Length\"\"\"\r\n\t# ALL REBAR IN MODEL\r\n\t# CHECK IF HOST REBAR\r\n\tglobal doc,debugger\r\n\trebar_list = []\r\n\ttry:\r\n\t\trbhd = RebarHostData.GetRebarHostData(e)\r\n\t\trebars = list(rbhd.GetRebarsInHost())\r\n\t\tdebugger.append(rebars)\r\n\t\tif len(rebars)>0:\r\n\t\t\trebar_list.extend(rebars)\r\n\t\t# RebarInSystem\r\n\t\trebar_list.extend(rebar_in_system(e))\r\n\texcept Exception as ex:\r\n\t\tdebugger.append(ex)\r\n\t\tpass\t\r\n\trb_dic_volume = {}\r\n\trb_dic_weight = {}\r\n\trb_dic_length = {}\r\n\r\n\tfor r in rebar_list:\r\n\t\ttry:\r\n\t\t\tkey = \"D{:0.0f}\".format(round(doc.GetElement(r.GetTypeId()).BarDiameter*304.8))\r\n\t\t\t# VOLUME\r\n\t\t\tif not key in rb_dic_volume.Keys:\r\n\t\t\t\trb_dic_volume[key] = r.Volume*28316.8 # cubic feet to cubic centimet\r\n\t\t\telse:\r\n\t\t\t\trb_dic_volume[key] += r.Volume*28316.8\r\n\t\t\t# WEIGHT\r\n\t\t\tif not key in rb_dic_weight:\r\n\t\t\t\trb_dic_weight[key] = rebar_weight(r,rb_type = key)\r\n\t\t\telse:\r\n\t\t\t\trb_dic_weight[key] += rebar_weight(r,rb_type = key)\t\r\n\t\t\t# LENGTH\r\n\t\t\tif not key in rb_dic_length:\r\n\t\t\t\trb_dic_length[key] = r.LookupParameter(\"Total Bar Length\").AsDouble()*0.3048 # unit Meter\r\n\t\t\telse:\r\n\t\t\t\trb_dic_length[key] += r.LookupParameter(\"Total Bar Length\").AsDouble()*0.3048\t\t\t\t\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\t\r\n\treturn e, rebar_list,rb_dic_volume,rb_dic_weight,rb_dic_length\r\n\r\ndef rebar_retriver(cates,rounding = 6):\t\r\n\t\"\"\"cat_dic_rebar_ratio : Hàm lượng thép KG / M3 / Category\r\n\tcat_dic_rebar_type_ratio : Hàm lượng thép KG / M3 / Category / Rebar Type\r\n\tcat_dic_rebar_volume : Khối tích thép M3 / Category\r\n\tcat_dic_rebar_weight : Trọng lượng thép KG / Category/ Rebar Type\"\"\"\r\n\tglobal doc,debugger\r\n\tcat_dic_rebar_ratio = {} #dictionary rebar ratio{\"Category\": 10.02} kg/m3\r\n\tcat_dic_rebar_type_ratio = {} #dictionary rebar type ratio {\"Category\": {\"D10\":12,\"D16\":15}} kg/m3\r\n\tcat_dic_rebar_volume = {} # dictionnay rebar volume ex: {\"Category\": {\"D 16\": 1.2,\"D 20\": 2.3}} m3\r\n\tcat_dic_rebar_type_weight = {} # dictionnay rebar weight ex: {\"Category\": {\"D 16\": 25,\"D 20\": 30}} kg\r\n\t\r\n\tfor cate in cates:\r\n\t\tcat_dic_rebar_ratio [cate] = 0\r\n\t\tcat_dic_rebar_volume[cate] = {} # ini dictionary of Category ex: {\"Category\":{}}\r\n\t\tcat_dic_rebar_type_weight[cate] = {}\r\n\t\ttry:\r\n\t\t\telements = getAllElementsOfCategory(doc,cate)\r\n\t\t\tvolume_concrete_sum = 0\r\n\t\t\trebars = [] # List of rebars\r\n\t\t\trebars_volume_dics = [] # List of Dictionary for Rebar  volume\r\n\t\t\trebars_weight_dics = [] # List of Dictionary for Rebar  Weight\t\t\t\r\n\t\t\tfor e in elements:\r\n\t\t\t\ttry:\r\n\t\t\t\t\trebar_host = get_rebar_dic(e)\r\n\t\t\t\t\tif len(rebar_host[1]) > 0:\r\n\t\t\t\t\t\t# rebars.extend(rebar_host[1])\r\n\t\t\t\t\t\trebars_volume_dics.append(rebar_host[2])\r\n\t\t\t\t\t\trebars_weight_dics.append(rebar_host[3])\r\n\t\t\t\t\t\tdebugger.append(\"here\")\r\n\t\t\t\t\t\ttry:\r\n\t\t\t\t\t\t\tvolume_concrete_sum += rebar_host[0].LookupParameter(\"Volume\").AsDouble()\r\n\t\t\t\t\t\texcept:\r\n\t\t\t\t\t\t\tpass\r\n\t\t\t\texcept Exception as ex:\r\n\t\t\t\t\tpass\r\n\t\t\tdebugger.append(\"here\")\r\n\t\t\t# tính hàm lượng thép KG / M3 / Category\r\n\t\t\t# volume_rebar_sum = sum([r.Volume for r in rebars])\r\n\t\t\tweight_rebar_sum = sum([rebars_weight_dics[d] for d in rebars_weight_dics])\r\n\t\t\tcat_dic_rebar_ratio [cate] = round(weight_rebar_sum/volume_concrete_sum,rounding)\r\n\t\t\t\t\t\t\t\t\t\t\t\r\n\t\t\t\r\n\t\t\tfor dic in rebars_volume_dics:\t\t\t\t\r\n\t\t\t\tfor d in dic:\r\n\t\t\t\t\tif not d in cat_dic_rebar_volume[cate].Keys:\r\n\t\t\t\t\t\tcat_dic_rebar_volume[cate][d] = dic[d]\r\n\t\t\t\t\telse:\r\n\t\t\t\t\t\tcat_dic_rebar_volume[cate][d] += dic[d]\r\n\t\t\t\r\n\t\t\tfor dic in rebars_weight_dics:\t\t\t\t\r\n\t\t\t\tfor d in dic:\r\n\t\t\t\t\tif not d in cat_dic_rebar_type_weight[cate].Keys:\r\n\t\t\t\t\t\tcat_dic_rebar_type_weight[cate][d] = dic[d]\r\n\t\t\t\t\telse:\r\n\t\t\t\t\t\tcat_dic_rebar_type_weight[cate][d] += dic[d]\r\n\t\t\r\n\r\n\t\t\tfor cate in cat_dic_rebar_type_weight:\r\n\t\t\t\tif not cate in cat_dic_rebar_type_weight.Keys:\r\n\t\t\t\t\tcat_dic_rebar_type_weight[cate] = {}\r\n\t\t\t\tfor d in cat_dic_rebar_type_weight[cate]:\r\n\t\t\t\t\ttry:\r\n\t\t\t\t\t\tif not d in cat_dic_rebar_type_weight[cate].Keys:\r\n\t\t\t\t\t\t\tcat_dic_rebar_type_weight[cate][d] = 0\r\n\t\t\t\t\t\tcat_dic_rebar_type_weight[cate][d] = cat_dic_rebar_type_weight[cate][d]/volume_concrete_sum\r\n\t\t\t\t\texcept:\r\n\t\t\t\t\t\tpass\r\n\r\n\t\t\r\n\t\texcept Exception as ex:\r\n\t\t\t# debugger.append(ex)\r\n\t\t\tpass\r\n\treturn cat_dic_rebar_ratio,cat_dic_rebar_type_weight,cat_dic_rebar_volume,cat_dic_rebar_type_weight\r\n\r\ndef rebar_weight(e,rb_type = None):\r\n\t\"\"\"Trả về Khối lượng (Kg) Thép\"\"\"\r\n\tglobal rb_dic_WPL\r\n\tif e.__class__.__name__ == \"Rebar\" or e.__class__.__name__ == \"RebarInSystem\":\r\n\t\tif rb_type == None:\r\n\t\t\trb_type = \"D{:0.0f}\".format(round(doc.GetElement(e.GetTypeId()).BarDiameter*304.8))\r\n\t\t# rn_quantity = e.Quantity\r\n\t\t# rb_each_bar_length = round(e.LookupParameter(\"Bar Length\").AsDouble()*304.8)\r\n\t\trb_total_bar_length = round(e.LookupParameter(\"Total Bar Length\").AsDouble()*304.8)\r\n\t\trb_total_weight = (rb_total_bar_length/1000)*rb_dic_WPL[rb_type]\r\n\t\t# debugger.append(\"Type: {}\".format(rb_type))\r\n\t\t# debugger.append(\"Quantity: {}\".format(rn_quantity))\r\n\t\t# debugger.append(\"Each Bar Length: {:0.0f} mm\".format(rb_each_bar_length))\r\n\t\t# debugger.append(\"Total Bar Length: {:0.0f} mm\".format(rb_total_bar_length))\r\n\t\t# debugger.append(\"Total Bar Weight: {:0.0f} kg\".format(rb_total_weight))\r\n\t\treturn rb_total_weight\r\ndef rebar_ratio(cates,rounding = 6):\r\n\t\"\"\"OUTS:\r\n\t[0] dic_cate_elements:\tDictionary Category (Body Concrete) Elements\r\n\t[1] dic_cate_volume:\tDictionary Category Volume (m3)\r\n\t[2] dic_cate_rebars:\tDictionary Category (Rebar)elements\r\n\t[3] dic_cate_rebars_volume:\tDictionary Category Rebar Volume (cm3)\r\n\t[4] dic_cate_rebars_weight:\tDictionary Category Rebar Weight (Kg)\r\n\t[5] dic_cate_rebars_weight_per_type:\tDictionary Category Rebar Weight per Type (Kg)(/Category/Type)\r\n\t[6] dic_cate_rebars_weight_ratio:\tDictionary Category Rebar Weight Ratio (kg/m3)(/Category)\r\n\t[7] dic_cate_rebars_weight_ratio_per_type:\tDictionary Category Elements (kg/m3)(/Category/Type)\r\n\t[8] dic_cate_rebars_length:\tDictionary Category Rebar Length (m)(/Category)\r\n\t[9] dic_cate_rebars_length_per_type:\tDictionary Category Rebar Length Per Type (m)(/Category/Type)\"\"\"\r\n\tglobal doc,debugger\r\n\r\n\t# OUT var\r\n\r\n\tdic_cate_elements = {}\r\n\tdic_cate_volume = {}\r\n\tdic_cate_rebars = {}\r\n\tdic_cate_rebars_volume = {}\r\n\tdic_cate_rebars_weight = {}\r\n\tdic_cate_rebars_weight_ratio = {}\r\n\r\n\tdic_cate_rebars_weight_per_type = {}\r\n\tdic_cate_rebars_weight_ratio_per_type = {}\r\n\r\n\tdic_cate_rebars_length = {}\r\n\tdic_cate_rebars_length_per_type = {}\r\n\t\r\n\tdic_cate_rebars_weight_ratio_per_type_combine = {}\r\n\r\n\tfor cate in cates:\r\n\t\telements = []\r\n\r\n\t\tdic_cate_elements[cate] = []\r\n\t\tdic_cate_volume[cate] = 0\r\n\t\tdic_cate_rebars[cate] = []\r\n\t\tdic_cate_rebars_volume[cate] = 0\r\n\t\tdic_cate_rebars_weight[cate] = 0\r\n\t\tdic_cate_rebars_weight_ratio[cate] = 0\r\n\r\n\t\tdic_cate_rebars_weight_per_type[cate] = {}\r\n\t\tdic_cate_rebars_weight_ratio_per_type[cate] = {}\r\n\t\t\r\n\t\tdic_cate_rebars_length[cate] = 0\r\n\t\tdic_cate_rebars_length_per_type[cate] = {}\r\n\r\n\t\ttry:\r\n\t\t\telements = getAllElementsOfCategory(doc,cate)\t\t\t\r\n\t\texcept:\r\n\t\t\tbreak\r\n\t\tfor e in elements:\r\n\t\t\ttry:\r\n\t\t\t\trebars = get_rebar_dic(e)\r\n\t\t\t\tif len(rebars[1]) > 0:\r\n\t\t\t\t\t# OUT COLLECTING\r\n\t\t\t\t\tdic_cate_elements[cate].append(e)\r\n\t\t\t\t\tdic_cate_volume[cate] += e.LookupParameter(\"Volume\").AsDouble()*0.0283168\r\n\t\t\t\t\tdic_cate_rebars[cate].extend(rebars[1])\r\n\t\t\t\t\tdic_cate_rebars_volume[cate] += sum([rebars[2][d] for d in rebars[2]])\r\n\t\t\t\t\tdic_cate_rebars_weight[cate] += sum([rebars[3][d] for d in rebars[3]])\r\n\t\t\t\t\t\r\n\t\t\t\t\tdic_cate_rebars_length[cate] += sum([rebars[4][d] for d in rebars[3]])\r\n\r\n\t\t\t\t\tfor d in rebars[3]:\r\n\t\t\t\t\t\tif not d in dic_cate_rebars_weight_per_type[cate]:\r\n\t\t\t\t\t\t\tdic_cate_rebars_weight_per_type[cate][d] = rebars[3][d]\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tdic_cate_rebars_weight_per_type[cate][d] += rebars[3][d]\r\n\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tif not d in dic_cate_rebars_length_per_type[cate]:\r\n\t\t\t\t\t\t\tdic_cate_rebars_length_per_type[cate][d] = rebars[4][d]\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tdic_cate_rebars_length_per_type[cate][d] += rebars[4][d]\r\n\t\t\t\t\t\t\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\ttry:\r\n\t\t\tdic_cate_rebars_weight_ratio[cate] = dic_cate_rebars_weight[cate] / dic_cate_volume[cate]\r\n\t\texcept:\r\n\t\t\tpass\r\n\t\tfor d in dic_cate_rebars_weight_per_type[cate]:\r\n\t\t\tdic_cate_rebars_weight_ratio_per_type[cate][d] = round(dic_cate_rebars_weight_per_type[cate][d] / dic_cate_volume[cate],3)\r\n\t\t\r\n\t\t\r\n\t\tfor cate in dic_cate_rebars_weight_ratio_per_type:\t\t\r\n\t\t\tdic_cate_rebars_weight_ratio_per_type_combine[cate] = {} # Category\r\n\t\t\tdic = dic_cate_rebars_weight_ratio_per_type[cate]\t\t\t\r\n\t\t\tkey_8 = \";\".join([str(d) for d in dic])\r\n\t\t\tvalue_8 = \";\".join([str(dic[d]) for d in dic])\t\t\t\t\r\n\t\t\tdic_cate_rebars_weight_ratio_per_type_combine[cate][key_8] = value_8\r\n\t\r\n\treturn dic_cate_elements,dic_cate_volume, dic_cate_rebars,dic_cate_rebars_volume,dic_cate_rebars_weight,dic_cate_rebars_weight_per_type,dic_cate_rebars_weight_ratio,dic_cate_rebars_weight_ratio_per_type,dic_cate_rebars_length,dic_cate_rebars_length_per_type,dic_cate_rebars_weight_ratio_per_type_combine\r\n\r\n#----------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\ncategories = list(doc.Settings.Categories)\r\ncategory_names = [c.Name for c in categories]\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\ncates = IN[0].splitlines()\r\nrb_data = IN[1][1:]\r\n\r\n# Element Dictionary for quickly access\r\ntry:\r\n\telem_dic = set_dic(selection)\r\nexcept:\r\n\tpass\r\n# rebar data dictionary\r\nrb_dic_WPL = {} # Diction Weight per Length\r\nfor rd in rb_data:\r\n\trb_dic_WPL[\"D{:0.0f}\".format(rd[0])] = rd[1]\r\n#----------------------------------------------------------------#\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nsetupUnit(doc)\r\nTransactionManager.Instance.TransactionTaskDone()\r\n#----------------------------------------------------------------#\r\nOUT =  rebar_ratio(cates)",
+      "VariableInputPorts": true,
+      "Id": "aec31d248f4b47d396eb23571ee307fd",
+      "Inputs": [
+        {
+          "Id": "95728e8364de4ba3a893e09a8e98dc43",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2b4060818b974148ac57ad8ff997fe42",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6de65436da8e4d57833e93f2c548ea76",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Columns\r\nStructural Framing\r\nFloors\r\nWalls\r\nParts",
+      "Id": "3a386fba67134c7aa3b64878b8478478",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "1a012c614fac448f9c351681cc0a76de",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.FileObject, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "fdfcf09d7d2e421fbdda2110e6be9961",
+      "Inputs": [
+        {
+          "Id": "9b7f8b1e7f884786acf26fc81513596b",
+          "Name": "path",
+          "Description": "Path to the file.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e6c7f00287ac47428781dd5fd746365e",
+          "Name": "file",
+          "Description": "File object",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a file object from a path."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSOffice.Data.ImportExcel@var,string,bool,bool",
+      "Id": "02a1215956ae49178bb55d611f81729f",
+      "Inputs": [
+        {
+          "Id": "1fb8aa17dc784be98a0bfc5c3428feea",
+          "Name": "file",
+          "Description": "File representing the Microsoft Excel spreadsheet.\n\nvar",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a87891c2ddf94c9c87c625b1ec373925",
+          "Name": "sheetName",
+          "Description": "Name of the worksheet containing the data.\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a37f2392ff2442ac99acd3a482703fed",
+          "Name": "readAsStrings",
+          "Description": "Toggle to switch between reading Excel file as strings.\n\nbool\nDefault value : false",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "52f8978abc0947cea717255396e442ac",
+          "Name": "showExcel",
+          "Description": "Toggle to switch between showing and hiding the main Excel window.\n\nbool\nDefault value : true",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "011b95b9af9f4aafbab6348b9f5f3957",
+          "Name": "data",
+          "Description": "Rows of data from the Excel worksheet.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Read data from a Microsoft Excel spreadsheet. Data is read by row and returned in a series of lists by row. Rows and columns are zero-indexed; for example, the value in cell A1 will appear in the data list at [0,0]. This node requires Microsoft Excel to be installed.\n\nData.ImportExcel (file: var, sheetName: string, readAsStrings: bool = false, showExcel: bool = true): var[][]"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.Filename, CoreNodeModels",
+      "HintPath": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\rebar\\rebar_data.xlsx",
+      "InputValue": ".\\rebar_data.xlsx",
+      "NodeType": "ExtensionNode",
+      "Id": "18f4d0508ba44fd6b4714d60c4b9ef21",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2d3cd7f9740a4a02af9fdfb7cab40e37",
+          "Name": "",
+          "Description": "Filename",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows you to select a file on the system to get its filename"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "\"Rebar Weight\";\nfalse;",
+      "Id": "aab2c9fdc32f4f54b1a50a6a7e8bb58b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "eb2c33592af041b7b1c2171c902f5fb9",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "b6f9647988ef4c40a52c5b1610d4559f",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "6ff8cbe0df21469a8ee80fe96e91da5c",
+      "Inputs": [
+        {
+          "Id": "5edebc947061499da1287c64cb5f6b95",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "ff394a92edbc458081ff3510f9bb9f3d",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "KQ[7];",
+      "Id": "90da93cfe9164c0f9962ac0d0b616b2a",
+      "Inputs": [
+        {
+          "Id": "c6a28dad8bf7410ba86d5f6ffa044492",
+          "Name": "KQ",
+          "Description": "KQ",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "1dc015f8c7414f61b02c33f99365aa92",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "KQ[6];",
+      "Id": "f7d8992189c64bd3b7bfcef2482f4a35",
+      "Inputs": [
+        {
+          "Id": "71da8d077736427b8f2bb5f9de2d662e",
+          "Name": "KQ",
+          "Description": "KQ",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8e3fee3b473c4b9ab742a946a2fbdc76",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "274855ed9ea943288a8baa9e9b8e2a06",
+      "Inputs": [
+        {
+          "Id": "1a3d5b6eaf844b00b060d6efee3ead72",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6ca3b05593ef412c99f3242099686eeb",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "KQ[10];",
+      "Id": "edd220cfe9c34b1a93892851870e5737",
+      "Inputs": [
+        {
+          "Id": "1add6e58920c4343904746e8a1d9426c",
+          "Name": "KQ",
+          "Description": "KQ",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "266ce24e37d648a4843621ca92d80de3",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "b360a274192f4faabfd5d703257ec8a1",
+      "Inputs": [
+        {
+          "Id": "97c5ad84d1eb4955894b3451f1e8fa03",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "538a86c3814146e58fd41a3f476fdb12",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#-------------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n    global doc    \r\n    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n    try:\r\n\t    view_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t    return view_\r\n    except:\r\n    \treturn\r\n\r\ndef get_sheet_view (view_name):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc#, debugger\r\n\tview_sheet = get_sheet_view_by_search_string(view_name)\r\n\tif view_sheet == None:\r\n\t\ttry:\r\n\t\t\t# Get an available title block from document\r\n\t\t\tcollector = list(FilteredElementCollector(doc).OfClass(FamilySymbol).OfCategory(BuiltInCategory.OST_TitleBlocks))\r\n\t\t\tfs = collector[0]#.FirstElement()\t\t\r\n\t\t\tTransactionManager.Instance.EnsureInTransaction(doc)\t\r\n\t\t\tview_sheet = ViewSheet.Create(doc,fs.Id)\r\n\t\t\ttry:\r\n\t\t\t\tview_sheet.SheetNumber = \"000\"\r\n\t\t\texcept:\r\n\t\t\t\tview_sheet.SheetNumber = \"000000000000\"\r\n\t\t\tview_sheet.Name = view_name\r\n\t\t\t# Delete Title Block\r\n\t\t\ttitle_blocks = list(FilteredElementCollector(doc,view_sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).WhereElementIsNotElementType().ToElements())\r\n\t\t\t[doc.Delete(t.Id) for t in title_blocks]\r\n\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\texcept Exception as ex:\r\n\t\t\t# debugger.append(ex)\r\n\t\t\tpass\r\n\treturn view_sheet\r\n\r\ndef write_text_note(viewId,position,text,typeId):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc\r\n\tif doc.GetElement(viewId) == None:\r\n\t\tviewId = doc.ActiveView.Id\r\n\tif position == None:\r\n\t\tposition = XYZ()\r\n\tif typeId ==  None or doc.GetElement(typeId) == None or not doc.GetElement(typeId).__class__ == TextNoteType:\r\n\t\ttypeId = list(FilteredElementCollector(doc).OfClass(TextNoteType).WhereElementIsElementType())[0].Id\r\n\t\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\r\n\ttext_note = TextNote.Create(doc,viewId,position,text,typeId = typeId)\r\n\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn text_note\r\n\t\r\ndef dic_to_text(dic):\r\n\t\"\"\"\r\n\tprint (dic_to_text({\"D10\":10,\"D16\":16,\"D20\":20}))\r\n\t---\r\n\tD10     10\r\n\tD16     16\r\n\tD20     20\r\n\tprint (dic_to_text({\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22},\r\n\t\t\"d\":[1,2,3,4]}))\r\n\t---\r\n\ta       {'D10': 10, 'D16': 16, 'D20': 20}\r\n\tb       {'D10': 11, 'D16': 17, 'D20': 21}\r\n\tc       {'D10': 12, 'D16': 18, 'D20': 22}\r\n\td       [1, 2, 3, 4]\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttext = \"\"\r\n\tlist_ = [\"{0}\\t{1}\".format(d,dic[d]) for d in dic]\r\n\tlist_.insert(0,time_)\r\n\tlist_.insert(0,data_name)\r\n\ttext = \"\\n\".join(list_)\r\n\treturn text\r\n\r\n\r\ndef dic_to_text_2(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\t---\r\n\ta       10      16      20\r\n\tb       11      17      21\r\n\tc       12      18      22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\tl_ = []\r\n\t\t\tl_.append(str(d))\r\n\t\t\tl_.extend([str(dic[d][c]) for c in dic[d]])\r\n\t\t\tlist_.append(\"\\t\".join(l_))\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\n\r\n\r\ndef dic_to_text_3(dic,column_types,col_head_first = \"Category\"):\r\n\t\"\"\"\r\n\tdic (dict): Từ điển Dữ liệu Ex: {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\t\t\t\t\t\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\t\t\t\t\t\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\tcolumn_types (list): Danh sách Tên cột  Ex: [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\"]\r\n\t---\r\n\tCategory        D10     D12     D14     D16     D18\r\n\ta       10      0       0       16      0       20\r\n\tb       11      0       0       17      0       21\r\n\tc       12      0       0       18      0       22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tdic_text={} # primitive Column head\r\n\t\tfor ttt in column_types:\r\n\t\t\tdic_text[ttt] = 0\r\n\t\tnew_dic = {}\r\n\r\n\t\tfor d in dic:\r\n\t\t\tnew_dic[d] = {}\r\n\t\t\tnew_d = dic_text.copy()\r\n\t\t\tnew_d.update(dic[d])\r\n\t\t\tnew_dic[d] = new_d\r\n\t\theaders = \"{0}\\t{1}\".format(col_head_first,\"\\t\".join([tt for tt in column_types]))\r\n\t\tcontent = []\r\n\t\tcontent.append(data_name)\r\n\t\tcontent.append(time_)\r\n\t\tcontent.append(headers)\r\n\r\n\t\tfor d in new_dic:\r\n\t\t\tcontent.append(\"{}\\t{}\".format(d,\"\\t\".join([str(new_dic[d][dd]) for dd in new_dic[d]])))\r\n\t\ttext = \"\\n\".join(content)\r\n\t\treturn text\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dic_to_text_4(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10;D11\":\"10;12\"},\r\n\t\t\"b\":{\"D10;D11\":\"11;12\"},\r\n\t\t\"c\":{\"D10;D11\":\"12;12\"}}\r\n\t---\r\n\ta       D10;D11      10;12\r\n\tb       D10;D11      11;12\r\n\tc       D10;D11      12;12\r\n\t\"\"\"\r\n\tglobal time_start,data_name,debugger\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\titem_str = \"\"\r\n\t\t\tfor c in dic[d]:\t\t\t\r\n\t\t\t\titem_str = \"{0}\\t{1}\".format(c,dic[d][c])\r\n\t\t\tjoin_str = \"{0}\\t{1}\".format(d,item_str)\t\t\t\r\n\t\t\tlist_.append(join_str)\t\t\t\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept Exception as ex:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dictionary_to_dict(dic):\r\n\t\"\"\"Use for converting Dynamo Dictionary to Python dict\r\n\tApply for {'key':{'key':{}}}\r\n\t\"\"\"\t\r\n\tif dic.__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\tdic = dict(dic)\t\t\r\n\ttry:\r\n\t\tfor d in dic:\t\t\t\r\n\t\t\tif dic[d].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\tdic[d] = dict(dic[d])\r\n\t\t\ttry:\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tif dic[d][c].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\t\t\tdic[d][c] = dict(dic[d][c])\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\texcept:\r\n\t\tpass\r\n\treturn dic\r\n\r\ndef revitDir(doc):\r\n\t\"\"\"\r\n\tdir : directory\r\n\tfile_name : Revit file name\r\n\t\"\"\"\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\t\tfile_name = doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\t\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,file_name\r\n\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\ndebugger = []\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\ndata = dictionary_to_dict(IN[1])\r\nrb_data = IN[2][1:]\r\ny = float(IN[3])/304.8\r\ndata_name = IN[4]\r\nmode = int(IN[5])\r\n#-------------------------------------------------------#\r\ntime_start = tuple(IN[6])\r\ntime_s = time.strftime(\"%y%m%d %H%M%S\",time_start)\r\nrb_types = [\"D{:0.0f}\".format(dat[0]) for dat in rb_data]\r\n\r\n\r\nviewId = get_sheet_view (view_name).Id\r\nif mode == 1:\r\n\ttext = dic_to_text(data)\r\nif mode == 2:\r\n\ttext = dic_to_text_2(data)\r\nif mode == 3:\r\n\ttext = dic_to_text_3(data,rb_types)\r\nif mode == 4:\r\n\ttext = dic_to_text_4(data)\r\n\r\ntext_note = write_text_note(viewId,XYZ(0,y,0),text,None)\r\nif text_note:\r\n\tOUT = data\r\nelse:\r\n\tOUT = \"FAIL\"",
+      "VariableInputPorts": true,
+      "Id": "60f31bebc9984423b724b199455ad78f",
+      "Inputs": [
+        {
+          "Id": "cf9765fcdc34410cace7a0ff00b91138",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "c28122ce261e49968d4b878b1951a8d8",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5b130f07272f4d0b8e0e6b22821b8cce",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a07a7d02472240c29c0e5947f4040d9b",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2be7729c379e4e5a93b00cdc8f894559",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "af3c160ef53f47dda49fe23e283e330e",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "2a2519044c9940c1a83c840841348fd8",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "1f38598fc9264cf5a2cf013995a13b47",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "REBAR INFORMATION",
+      "Id": "cbcba631abc3457c8273df3c87912b7e",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "703f1a26d1e34ab696b3bec3cbafc3fa",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#-------------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n    global doc    \r\n    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n    try:\r\n\t    view_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t    return view_\r\n    except:\r\n    \treturn\r\n\r\ndef get_sheet_view (view_name):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc#, debugger\r\n\tview_sheet = get_sheet_view_by_search_string(view_name)\r\n\tif view_sheet == None:\r\n\t\ttry:\r\n\t\t\t# Get an available title block from document\r\n\t\t\tcollector = list(FilteredElementCollector(doc).OfClass(FamilySymbol).OfCategory(BuiltInCategory.OST_TitleBlocks))\r\n\t\t\tfs = collector[0]#.FirstElement()\t\t\r\n\t\t\tTransactionManager.Instance.EnsureInTransaction(doc)\t\r\n\t\t\tview_sheet = ViewSheet.Create(doc,fs.Id)\r\n\t\t\ttry:\r\n\t\t\t\tview_sheet.SheetNumber = \"000\"\r\n\t\t\texcept:\r\n\t\t\t\tview_sheet.SheetNumber = \"000000000000\"\r\n\t\t\tview_sheet.Name = view_name\r\n\t\t\t# Delete Title Block\r\n\t\t\ttitle_blocks = list(FilteredElementCollector(doc,view_sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).WhereElementIsNotElementType().ToElements())\r\n\t\t\t[doc.Delete(t.Id) for t in title_blocks]\r\n\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\texcept Exception as ex:\r\n\t\t\t# debugger.append(ex)\r\n\t\t\tpass\r\n\treturn view_sheet\r\n\r\ndef write_text_note(viewId,position,text,typeId):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc\r\n\tif doc.GetElement(viewId) == None:\r\n\t\tviewId = doc.ActiveView.Id\r\n\tif position == None:\r\n\t\tposition = XYZ()\r\n\tif typeId ==  None or doc.GetElement(typeId) == None or not doc.GetElement(typeId).__class__ == TextNoteType:\r\n\t\ttypeId = list(FilteredElementCollector(doc).OfClass(TextNoteType).WhereElementIsElementType())[0].Id\r\n\t\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\r\n\ttext_note = TextNote.Create(doc,viewId,position,text,typeId = typeId)\r\n\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn text_note\r\n\t\r\ndef dic_to_text(dic):\r\n\t\"\"\"\r\n\tprint (dic_to_text({\"D10\":10,\"D16\":16,\"D20\":20}))\r\n\t---\r\n\tD10     10\r\n\tD16     16\r\n\tD20     20\r\n\tprint (dic_to_text({\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22},\r\n\t\t\"d\":[1,2,3,4]}))\r\n\t---\r\n\ta       {'D10': 10, 'D16': 16, 'D20': 20}\r\n\tb       {'D10': 11, 'D16': 17, 'D20': 21}\r\n\tc       {'D10': 12, 'D16': 18, 'D20': 22}\r\n\td       [1, 2, 3, 4]\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttext = \"\"\r\n\tlist_ = [\"{0}\\t{1}\".format(d,dic[d]) for d in dic]\r\n\tlist_.insert(0,time_)\r\n\tlist_.insert(0,data_name)\r\n\ttext = \"\\n\".join(list_)\r\n\treturn text\r\n\r\n\r\ndef dic_to_text_2(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\t---\r\n\ta       10      16      20\r\n\tb       11      17      21\r\n\tc       12      18      22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\tl_ = []\r\n\t\t\tl_.append(str(d))\r\n\t\t\tl_.extend([str(dic[d][c]) for c in dic[d]])\r\n\t\t\tlist_.append(\"\\t\".join(l_))\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\n\r\n\r\ndef dic_to_text_3(dic,column_types,col_head_first = \"Category\"):\r\n\t\"\"\"\r\n\tdic (dict): Từ điển Dữ liệu Ex: {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\t\t\t\t\t\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\t\t\t\t\t\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\tcolumn_types (list): Danh sách Tên cột  Ex: [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\"]\r\n\t---\r\n\tCategory        D10     D12     D14     D16     D18\r\n\ta       10      0       0       16      0       20\r\n\tb       11      0       0       17      0       21\r\n\tc       12      0       0       18      0       22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tdic_text={} # primitive Column head\r\n\t\tfor ttt in column_types:\r\n\t\t\tdic_text[ttt] = 0\r\n\t\tnew_dic = {}\r\n\r\n\t\tfor d in dic:\r\n\t\t\tnew_dic[d] = {}\r\n\t\t\tnew_d = dic_text.copy()\r\n\t\t\tnew_d.update(dic[d])\r\n\t\t\tnew_dic[d] = new_d\r\n\t\theaders = \"{0}\\t{1}\".format(col_head_first,\"\\t\".join([tt for tt in column_types]))\r\n\t\tcontent = []\r\n\t\tcontent.append(data_name)\r\n\t\tcontent.append(time_)\r\n\t\tcontent.append(headers)\r\n\r\n\t\tfor d in new_dic:\r\n\t\t\tcontent.append(\"{}\\t{}\".format(d,\"\\t\".join([str(new_dic[d][dd]) for dd in new_dic[d]])))\r\n\t\ttext = \"\\n\".join(content)\r\n\t\treturn text\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dic_to_text_4(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10;D11\":\"10;12\"},\r\n\t\t\"b\":{\"D10;D11\":\"11;12\"},\r\n\t\t\"c\":{\"D10;D11\":\"12;12\"}}\r\n\t---\r\n\ta       D10;D11      10;12\r\n\tb       D10;D11      11;12\r\n\tc       D10;D11      12;12\r\n\t\"\"\"\r\n\tglobal time_start,data_name,debugger\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\titem_str = \"\"\r\n\t\t\tfor c in dic[d]:\t\t\t\r\n\t\t\t\titem_str = \"{0}\\t{1}\".format(c,dic[d][c])\r\n\t\t\tjoin_str = \"{0}\\t{1}\".format(d,item_str)\t\t\t\r\n\t\t\tlist_.append(join_str)\t\t\t\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept Exception as ex:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dictionary_to_dict(dic):\r\n\t\"\"\"Use for converting Dynamo Dictionary to Python dict\r\n\tApply for {'key':{'key':{}}}\r\n\t\"\"\"\t\r\n\tif dic.__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\tdic = dict(dic)\t\t\r\n\ttry:\r\n\t\tfor d in dic:\t\t\t\r\n\t\t\tif dic[d].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\tdic[d] = dict(dic[d])\r\n\t\t\ttry:\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tif dic[d][c].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\t\t\tdic[d][c] = dict(dic[d][c])\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\texcept:\r\n\t\tpass\r\n\treturn dic\r\n\r\ndef revitDir(doc):\r\n\t\"\"\"\r\n\tdir : directory\r\n\tfile_name : Revit file name\r\n\t\"\"\"\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\t\tfile_name = doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\t\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,file_name\r\n\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\ndebugger = []\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\ndata = dictionary_to_dict(IN[1])\r\nrb_data = IN[2][1:]\r\ny = float(IN[3])/304.8\r\ndata_name = IN[4]\r\nmode = int(IN[5])\r\n#-------------------------------------------------------#\r\ntime_start = tuple(IN[6])\r\ntime_s = time.strftime(\"%y%m%d %H%M%S\",time_start)\r\nrb_types = [\"D{:0.0f}\".format(dat[0]) for dat in rb_data]\r\n\r\n\r\nviewId = get_sheet_view (view_name).Id\r\nif mode == 1:\r\n\ttext = dic_to_text(data)\r\nif mode == 2:\r\n\ttext = dic_to_text_2(data)\r\nif mode == 3:\r\n\ttext = dic_to_text_3(data,rb_types)\r\nif mode == 4:\r\n\ttext = dic_to_text_4(data)\r\n\r\ntext_note = write_text_note(viewId,XYZ(0,y,0),text,None)\r\nif text_note:\r\n\tOUT = data\r\nelse:\r\n\tOUT = \"FAIL\"",
+      "VariableInputPorts": true,
+      "Id": "566b3284fc514987a2473145d21801d4",
+      "Inputs": [
+        {
+          "Id": "61da36b4171b4228bfd06ef1c18e652b",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "55c844ccd0384159857ebaafc69d4db2",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "617faf000f3747e0adad06b18d60eaf4",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "fed7731e2ba046c989b3c1ece81306d4",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "0e6ffff11e844900bfbb2a9e492a00c0",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4fbf7dcfe5184d17a0252e69382762ef",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "1b65df6a4c1c48cab1776db1a2839e16",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "d6a7c53860394627b52675b5939f4b2f",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "e823005d839c43f082218475bcd68fec",
+      "Inputs": [
+        {
+          "Id": "38620df9bddc41f0b3861489143200e5",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9b31550c559f4f389a2c8e67e43271d5",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "3d7bc80f2879414ab7c3b3431f08a5e6",
+      "Inputs": [
+        {
+          "Id": "ec8c261d90504bfe947131610479a8ed",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6a1ab0864d254bc084b8f619420c9aba",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "0;\n-60;\n-120;",
+      "Id": "a4cd3b64bbc64ad8984baba25d7ab0a8",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "b18df361db6048af834e583252c9f224",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7b4f423fe52645aaaa587ec9447928a9",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3a42959b137a473aa4b5b35003298aee",
+          "Name": "",
+          "Description": "Value of expression at line 3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#-------------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n    global doc    \r\n    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n    try:\r\n\t    view_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t    return view_\r\n    except:\r\n    \treturn\r\n\r\ndef get_sheet_view (view_name):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc#, debugger\r\n\tview_sheet = get_sheet_view_by_search_string(view_name)\r\n\tif view_sheet == None:\r\n\t\ttry:\r\n\t\t\t# Get an available title block from document\r\n\t\t\tcollector = list(FilteredElementCollector(doc).OfClass(FamilySymbol).OfCategory(BuiltInCategory.OST_TitleBlocks))\r\n\t\t\tfs = collector[0]#.FirstElement()\t\t\r\n\t\t\tTransactionManager.Instance.EnsureInTransaction(doc)\t\r\n\t\t\tview_sheet = ViewSheet.Create(doc,fs.Id)\r\n\t\t\ttry:\r\n\t\t\t\tview_sheet.SheetNumber = \"000\"\r\n\t\t\texcept:\r\n\t\t\t\tview_sheet.SheetNumber = \"000000000000\"\r\n\t\t\tview_sheet.Name = view_name\r\n\t\t\t# Delete Title Block\r\n\t\t\ttitle_blocks = list(FilteredElementCollector(doc,view_sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).WhereElementIsNotElementType().ToElements())\r\n\t\t\t[doc.Delete(t.Id) for t in title_blocks]\r\n\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\texcept Exception as ex:\r\n\t\t\t# debugger.append(ex)\r\n\t\t\tpass\r\n\treturn view_sheet\r\n\r\ndef write_text_note(viewId,position,text,typeId):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc\r\n\tif doc.GetElement(viewId) == None:\r\n\t\tviewId = doc.ActiveView.Id\r\n\tif position == None:\r\n\t\tposition = XYZ()\r\n\tif typeId ==  None or doc.GetElement(typeId) == None or not doc.GetElement(typeId).__class__ == TextNoteType:\r\n\t\ttypeId = list(FilteredElementCollector(doc).OfClass(TextNoteType).WhereElementIsElementType())[0].Id\r\n\t\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\r\n\ttext_note = TextNote.Create(doc,viewId,position,text,typeId = typeId)\r\n\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn text_note\r\n\t\r\ndef dic_to_text(dic):\r\n\t\"\"\"\r\n\tprint (dic_to_text({\"D10\":10,\"D16\":16,\"D20\":20}))\r\n\t---\r\n\tD10     10\r\n\tD16     16\r\n\tD20     20\r\n\tprint (dic_to_text({\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22},\r\n\t\t\"d\":[1,2,3,4]}))\r\n\t---\r\n\ta       {'D10': 10, 'D16': 16, 'D20': 20}\r\n\tb       {'D10': 11, 'D16': 17, 'D20': 21}\r\n\tc       {'D10': 12, 'D16': 18, 'D20': 22}\r\n\td       [1, 2, 3, 4]\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttext = \"\"\r\n\tlist_ = [\"{0}\\t{1}\".format(d,dic[d]) for d in dic]\r\n\tlist_.insert(0,time_)\r\n\tlist_.insert(0,data_name)\r\n\ttext = \"\\n\".join(list_)\r\n\treturn text\r\n\r\n\r\ndef dic_to_text_2(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\t---\r\n\ta       10      16      20\r\n\tb       11      17      21\r\n\tc       12      18      22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\tl_ = []\r\n\t\t\tl_.append(str(d))\r\n\t\t\tl_.extend([str(dic[d][c]) for c in dic[d]])\r\n\t\t\tlist_.append(\"\\t\".join(l_))\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\n\r\n\r\ndef dic_to_text_3(dic,column_types,col_head_first = \"Category\"):\r\n\t\"\"\"\r\n\tdic (dict): Từ điển Dữ liệu Ex: {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\t\t\t\t\t\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\t\t\t\t\t\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\tcolumn_types (list): Danh sách Tên cột  Ex: [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\"]\r\n\t---\r\n\tCategory        D10     D12     D14     D16     D18\r\n\ta       10      0       0       16      0       20\r\n\tb       11      0       0       17      0       21\r\n\tc       12      0       0       18      0       22\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tdic_text={} # primitive Column head\r\n\t\tfor ttt in column_types:\r\n\t\t\tdic_text[ttt] = 0\r\n\t\tnew_dic = {}\r\n\r\n\t\tfor d in dic:\r\n\t\t\tnew_dic[d] = {}\r\n\t\t\tnew_d = dic_text.copy()\r\n\t\t\tnew_d.update(dic[d])\r\n\t\t\tnew_dic[d] = new_d\r\n\t\theaders = \"{0}\\t{1}\".format(col_head_first,\"\\t\".join([tt for tt in column_types]))\r\n\t\tcontent = []\r\n\t\tcontent.append(data_name)\r\n\t\tcontent.append(time_)\r\n\t\tcontent.append(headers)\r\n\r\n\t\tfor d in new_dic:\r\n\t\t\tcontent.append(\"{}\\t{}\".format(d,\"\\t\".join([str(new_dic[d][dd]) for dd in new_dic[d]])))\r\n\t\ttext = \"\\n\".join(content)\r\n\t\treturn text\r\n\texcept:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dic_to_text_4(dic):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10;D11\":\"10;12\"},\r\n\t\t\"b\":{\"D10;D11\":\"11;12\"},\r\n\t\t\"c\":{\"D10;D11\":\"12;12\"}}\r\n\t---\r\n\ta       D10;D11      10;12\r\n\tb       D10;D11      11;12\r\n\tc       D10;D11      12;12\r\n\t\"\"\"\r\n\tglobal time_start,data_name,debugger\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\ttry:\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tfor d in dic:\r\n\t\t\titem_str = \"\"\r\n\t\t\tfor c in dic[d]:\t\t\t\r\n\t\t\t\titem_str = \"{0}\\t{1}\".format(c,dic[d][c])\r\n\t\t\tjoin_str = \"{0}\\t{1}\".format(d,item_str)\t\t\t\r\n\t\t\tlist_.append(join_str)\t\t\t\r\n\t\treturn \"\\n\".join(list_)\r\n\texcept Exception as ex:\r\n\t\treturn dic_to_text(dic)\r\n\r\ndef dictionary_to_dict(dic):\r\n\t\"\"\"Use for converting Dynamo Dictionary to Python dict\r\n\tApply for {'key':{'key':{}}}\r\n\t\"\"\"\t\r\n\tif dic.__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\tdic = dict(dic)\t\t\r\n\ttry:\r\n\t\tfor d in dic:\t\t\t\r\n\t\t\tif dic[d].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\tdic[d] = dict(dic[d])\r\n\t\t\ttry:\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tif dic[d][c].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\t\t\tdic[d][c] = dict(dic[d][c])\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\texcept:\r\n\t\tpass\r\n\treturn dic\r\n\r\ndef revitDir(doc):\r\n\t\"\"\"\r\n\tdir : directory\r\n\tfile_name : Revit file name\r\n\t\"\"\"\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\t\tfile_name = doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\t\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,file_name\r\n\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\ndebugger = []\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\ndata = dictionary_to_dict(IN[1])\r\nrb_data = IN[2][1:]\r\ny = float(IN[3])/304.8\r\ndata_name = IN[4]\r\nmode = int(IN[5])\r\n#-------------------------------------------------------#\r\ntime_start = tuple(IN[6])\r\ntime_s = time.strftime(\"%y%m%d %H%M%S\",time_start)\r\nrb_types = [\"D{:0.0f}\".format(dat[0]) for dat in rb_data]\r\n\r\n\r\nviewId = get_sheet_view (view_name).Id\r\nif mode == 1:\r\n\ttext = dic_to_text(data)\r\nif mode == 2:\r\n\ttext = dic_to_text_2(data)\r\nif mode == 3:\r\n\ttext = dic_to_text_3(data,rb_types)\r\nif mode == 4:\r\n\ttext = dic_to_text_4(data)\r\n\r\ntext_note = write_text_note(viewId,XYZ(0,y,0),text,None)\r\nif text_note:\r\n\tOUT = data\r\nelse:\r\n\tOUT = \"FAIL\"",
+      "VariableInputPorts": true,
+      "Id": "ca2fdd2283054e28b70d6fec561d7b39",
+      "Inputs": [
+        {
+          "Id": "6e218bd99eb04d03b1b281dde2e65a99",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a059f4eb6c06489984a5d3c0a0ca3a98",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6f59693aa8de4b2982bc52ad3f5f4ac7",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "9cb7d9fe80874d588134a05090720f58",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "77b91a56753e48a892d06c75f4501325",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d5ae147f559d43328dd4372ad478659a",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "c90b5f6a253d479e9ef9a0af6a9b424b",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "4b6c21b1233041feb8b89b40f4099723",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "\"Hàm lương thép (Kg/m3) / Category\";\n\"Hàm lương thép (Kg/m3) / Category / Rebar Type\";\n\"Hàm lương thép (Kg/m3) / Category / Rebar Type (Joined String)\";",
+      "Id": "e3dbf8f8490642ebb72e43e9fca1fdea",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "bb0b9221b6f04ceebedc303bca8c4f20",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5c973639582c4e1096c31e6040f77fad",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "634421f9137f4ac580c6c2f794a8a40d",
+          "Name": "",
+          "Description": "Value of expression at line 3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "1;\n2;\n3;\n4;",
+      "Id": "c979e82e107e4c33b411efeec4716132",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "4499e6e7cea045c9b4716d869514c6f5",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "506ea0633bad424182e2bcf87b813dc3",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6bd8931a3645419b8e2b55117fe95d84",
+          "Name": "",
+          "Description": "Value of expression at line 3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5c1addd1456c45d8b6657f9ff02b6963",
+          "Name": "",
+          "Description": "Value of expression at line 4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "2d79147d84e1450ba983dabe0c94d3f5",
+      "Inputs": [
+        {
+          "Id": "a2c1f87673564376ab21afe33995d5a5",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "db4f360269874e668414e8adb82510c8",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#-------------------------------------------------------#\r\ndef dic_to_list_1(dic,data_name = \"Data table name\",header = ['Category','Rebar Weight Ratio(kg/m3)']):\r\n\t\"\"\"\r\n\tprint (dic_to_text({\"D10\":10,\"D16\":16,\"D20\":20}))\r\n\t---\r\n\t[['D10','10'],\r\n\t['D16','16'],\r\n\t['D20','20']]\r\n\tprint (dic_to_text({\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22},\r\n\t\t\"d\":[1,2,3,4]}))\r\n\t---\r\n\t[['a','{'D10': 10, 'D16': 16, 'D20': 20}'],\r\n\t['b','{'D10': 11, 'D16': 17, 'D20': 21}'],\r\n\t[c','{'D10': 12, 'D16': 18, 'D20': 22}'],\r\n\t['d','[1, 2, 3, 4]']]\r\n\t\"\"\"\r\n\tglobal time_start\r\n\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\tlist_ = []\r\n\tlist_.append(data_name)\r\n\tlist_.append(time_)\r\n\tlist_.append(header)\r\n\tlist_.extend([[d,dic[d]] for d in dic])\r\n\treturn list_\r\n\r\ndef dic_to_list_2(dic,data_name = \"Data table name\",header = ['Category','Rebar Weight Ratio(kg/m3)']):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\t---\r\n\t[['a','10','16','20'],\r\n\t['b','11','17','21'],\r\n\t['c','12','18','22']]\r\n\t\"\"\"\r\n\tglobal time_start\r\n\ttry:\r\n\t\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tlist_.append(header)\r\n\t\tfor d in dic:\r\n\t\t\tl_ = []\r\n\t\t\tl_.append(str(d))\r\n\t\t\tl_.extend([str(dic[d][c]) for c in dic[d]])\r\n\t\t\tlist_.append(l_)\r\n\t\treturn list_\r\n\texcept:\r\n\t\treturn dic_to_list_1(dic,data_name=data_name)\r\n\r\ndef dic_to_list_3(dic,column_types,data_name = \"Rebar Weight Ratio(kg/m3) / Category / Rebar Type\",header = ['Category']):\r\n\t\"\"\"\r\n\tdic (dict): Từ điển Dữ liệu Ex: {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\t\t\t\t\t\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\t\t\t\t\t\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\tcolumn_types (list): Danh sách Tên cột  Ex: [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\",\"D20\"]\r\n\t---\r\n\t[['Category', 'D10', 'D12', 'D14', 'D16', 'D18', 'D20'],\r\n\t['a', 10, 0, 0, 16, 0, 20],\r\n\t['b', 11, 0, 0, 17, 0, 21],\r\n\t['c', 12, 0, 0, 18, 0, 22]]\r\n\t\"\"\"\r\n\tglobal time_start\r\n\ttry:\r\n\t\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\t\tdic_text={} # primitive Column head\r\n\t\tfor ttt in column_types:\r\n\t\t\tdic_text[ttt] = 0\r\n\t\tnew_dic = {}\r\n\r\n\t\tfor d in dic:\r\n\t\t\tnew_dic[d] = {}\r\n\t\t\tnew_d = dic_text.copy()\r\n\t\t\tnew_d.update(dic[d])\r\n\t\t\tnew_dic[d] = new_d\r\n\t\t\r\n\t\theader.extend([tt for tt in column_types])\r\n\t\tcontent = []\r\n\r\n\t\tcontent.append(data_name)\r\n\t\tcontent.append(time_)\r\n\t\tcontent.append(header)\r\n\r\n\t\tfor d in new_dic:\r\n\t\t\tline = []\r\n\t\t\tline.append(d)\r\n\t\t\tline.extend([new_dic[d][c] for c in column_types])\r\n\t\t\tcontent.append(line)\r\n\t\t\r\n\t\treturn content\r\n\texcept:\r\n\t\treturn dic_to_list_1(dic,data_name=data_name)\r\ndef dic_to_list_4(dic,data_name = \"Data table name\",header = ['Category','Rebar Weight Ratio(kg/m3)/ Category / Rebar Type']):\r\n\t\"\"\"\r\n\t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\t---\r\n\t[['a','10','16','20'],\r\n\t['b','11','17','21'],\r\n\t['c','12','18','22']]\r\n\t\"\"\"\r\n\tglobal time_start\r\n\ttry:\r\n\t\ttime_ = time.strftime(\"%d-%m-%y %H:%M:%S\",time_start)\r\n\t\tlist_ = []\r\n\t\tlist_.append(data_name)\r\n\t\tlist_.append(time_)\r\n\t\tlist_.append(header)\r\n\t\tfor d in dic:\r\n\t\t\tl_ = []\r\n\t\t\tl_.append(str(d))\r\n\t\t\tif dic[d].__class__.__name__ == \"dict\":\r\n\t\t\t\tll_ = []\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tll_.append(c)\r\n\t\t\t\t\tll_.append(dic[d][c])\r\n\t\t\t\tl_.extend(ll_)\r\n\t\t\telse:\r\n\t\t\t\tl_.extend([str(dic[d][c]) for c in dic[d]])\r\n\t\t\tlist_.append(l_)\r\n\t\treturn list_\r\n\texcept:\r\n\t\treturn dic_to_list_1(dic,data_name=data_name)\r\n\r\ndef write_excel_2(file_name,dir_path,excel_app,active_workbook,sheet_name,row,column,data,save = False):\r\n\t\"\"\"data = single list\"\"\"\r\n\r\n\tglobal debugger\r\n\t\r\n\tif excel_app == None or active_workbook == None:\r\n\t\texcel_path = \"{0}{1}\".format(\"\\\\\".join([dir_path,file_name]),\".xlsx\")\t\r\n\t\texcel_app = Excel.ApplicationClass()\r\n\t\texcel_app.Visible = True\t\r\n\t\tactive_workbook = excel_app.ActiveWorkbook\r\n\t\tif active_workbook == None:\r\n\t\t\texcel_app.Workbooks.Add()\r\n\t\t\tactive_workbook = excel_app.ActiveWorkbook\r\n\t\tworksheets = active_workbook.Worksheets\r\n\t\r\n\tif not sheet_name in [worksheets(i+1).Name for i in range(worksheets.Count)]:\r\n\t\tsheet = worksheets.Add()\r\n\t\tsheet.Name = sheet_name\r\n\telse:\r\n\t\tsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\t\r\n\tif data.__class__.__name__ == \"list\":\r\n\t\tfor d in data:\r\n\t\t\tif d.__class__.__name__ == \"list\":\r\n\t\t\t\tfor c in d:\r\n\t\t\t\t\tsheet.Cells(row + data.index(d),column + d.index(c)).Value = c\r\n\t\t\telse:\r\n\t\t\t\tsheet.Cells(row + data.index(d),column).Value = str(d)\r\n\tif save:\r\n\t\tactive_workbook.SaveAs(Filename = excel_path)\r\n\t\tactive_workbook.Close()\r\n\t\texcel_app.Quit()\r\n\r\n\r\ndef write_excel_3(file_name,dir_path,sheet_names,row,column,datas):\r\n\t\"\"\"datas : list[list]\"\"\"\r\n\tglobal debugger\r\n\texcel_path = \"{0}{1}\".format(\"\\\\\".join([dir_path,file_name]),\".xlsx\")\t\r\n\texcel_app = Excel.ApplicationClass()\r\n\texcel_app.Visible = True\t\r\n\tactive_workbook = excel_app.ActiveWorkbook\r\n\tif active_workbook == None:\r\n\t\texcel_app.Workbooks.Add()\r\n\t\tactive_workbook = excel_app.ActiveWorkbook\r\n\tworksheets = active_workbook.Worksheets\r\n\t# WRITE DATA\r\n\tif len(datas) == len(sheet_names):\r\n\t\tfor data in datas:\r\n\t\t\ttry:\r\n\t\t\t\tsheet_name = sheet_names[datas.index(data)]\r\n\t\t\t\t# write_excel_2(file_name,dir_path,excel_app,active_workbook,sheet_name,row,column,data,save = False)\r\n\t\t\t\tif not sheet_name in [worksheets(i+1).Name for i in range(worksheets.Count)]:\r\n\t\t\t\t\tsheet = worksheets.Add()\r\n\t\t\t\t\tsheet.Name = sheet_name\r\n\t\t\t\telse:\r\n\t\t\t\t\tsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\t\t\t\tif data.__class__.__name__ == \"list\":\r\n\t\t\t\t\tfor d in data:\r\n\t\t\t\t\t\tif d.__class__.__name__ == \"list\":\r\n\t\t\t\t\t\t\tfor c in d:\r\n\t\t\t\t\t\t\t\tsheet.Cells(row + data.index(d),column + d.index(c)).Value = c\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tsheet.Cells(row + data.index(d),column).Value = str(d)\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\tactive_workbook.SaveAs(Filename = excel_path)\r\n\t\tactive_workbook.Close()\r\n\t\texcel_app.Quit()\r\n\treturn 0\r\n\r\ndef revitDir(doc):\r\n\t\"\"\"\r\n\tdir : directory\r\n\tfile_name : Revit file name\r\n\t\"\"\"\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\t\tfile_name = doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\t\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,file_name\r\n\r\ndef dictionary_to_dict(dic):\r\n\t\"\"\"Use for converting Dynamo Dictionary to Python dict\r\n\tApply for {'key':{'key':{}}}\r\n\t\"\"\"\t\r\n\tif dic.__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\tdic = dict(dic)\t\t\r\n\ttry:\r\n\t\tfor d in dic:\t\t\t\r\n\t\t\tif dic[d].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\tdic[d] = dict(dic[d])\r\n\t\t\ttry:\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tif dic[d][c].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\t\t\tdic[d][c] = dict(dic[d][c])\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\texcept:\r\n\t\tpass\r\n\treturn dic\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\ndebugger = []\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\nview_name = IN[0]\r\ndata = [dictionary_to_dict(dic) for dic in IN[1]] # data = list[dict]\r\nrb_data = IN[2][1:]\r\nsheet_names = IN[3] # list[str] sheet Name\r\ntime_start = tuple(IN[4])#time.strftime(\"%y%m%d %H%M%S\",time.strptime(IN[4],\"%d-%m-%y %H:%M:%S\"))#time.strftime(\"%d-%m-%y %H:%M:%S\",time.localtime(time.time()))\r\ndata_names = IN[5]\r\n#-------------------------------------------------------#\r\ntime_s = time.strftime(\"%y%m%d %H%M%S\",time_start)\r\nrb_types = [\"D{:0.0f}\".format(dat[0]) for dat in rb_data]\r\n\r\nrvt_dir, rvt_file = revitDir(doc)\r\nfile_name = rvt_file +\"-\"+view_name+\"-\"+time_s\r\ndir_path = rvt_dir[:-1]\r\n\r\nif len(data) == len(sheet_names) == len(data_names):\r\n\tdatas = []\r\n\tdata_name = data_names[0]\r\n\tdatas.append(dic_to_list_1(data[0],data_name = data_names[0]))\r\n\t\r\n\tdatas.append(dic_to_list_3(data[1],column_types = rb_types,data_name = data_names[1]))\r\n\t\r\n\tdatas.append(dic_to_list_4(data[2],data_name = data_names[2]))\r\n\r\n\twrite_excel_3(file_name,dir_path,sheet_names,1,1,datas)\r\n\r\n\r\nOUT = file_name,dir_path,sheet_names,datas\r\n",
+      "VariableInputPorts": true,
+      "Id": "74a374fc73fe4bcd8ab0a57ce5fade29",
+      "Inputs": [
+        {
+          "Id": "c5368a4fbcc14816b0a5cc26246e2485",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8f3e268a6475479ba45a301c50c443a8",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4ab0fdd46f3f4c2897b3d14081703326",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "dc2e280d5c2a471d9cd3e6e9076b9324",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "b1c4f7580be6494a94b0351573a2d0b4",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "c7e3ab1391834a70996355994910b011",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8a69b5231b0d4dc59ad38e46f19b9e7b",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "\"Cate_Ratio\";\n\"Cate_RbType_Ratio\";\n\"Cate_RbType_Ratio_JSTR\";",
+      "Id": "9fba880254bd4f35b275241dd273c3e2",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8eec401b0fcf4391b59b8a0caace12cf",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5b39f553bf9c486ba1f1f84b1b18892c",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "55eb895fa9004436ace7c82d4b1df5d5",
+          "Name": "",
+          "Description": "Value of expression at line 3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import time\r\n\r\ntime_start = time.localtime(time.time())#time.strftime(\"%d-%m-%y %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = time_start",
+      "VariableInputPorts": true,
+      "Id": "311cad3571444aac80f5dc393f605882",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d8d64b0581274430a3c6b0a82d1d1f9d",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.CreateList, CoreNodeModels",
+      "VariableInputPorts": true,
+      "NodeType": "ExtensionNode",
+      "Id": "5ef475cc5908460490af9058611806c9",
+      "Inputs": [
+        {
+          "Id": "b4a546d17ce64fb781f419532e0b0a43",
+          "Name": "item0",
+          "Description": "Item Index #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "68a2e7b169084dbeab73f560d5d3f01a",
+          "Name": "item1",
+          "Description": "Item Index #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d0cf3fa61c2341da80913a89356eafc9",
+          "Name": "item2",
+          "Description": "Item Index #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "133c01ad9c9a4348bc0f7b8280b66b46",
+          "Name": "list",
+          "Description": "A list",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Makes a new list out of the given inputs"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.CreateList, CoreNodeModels",
+      "VariableInputPorts": true,
+      "NodeType": "ExtensionNode",
+      "Id": "f5c8352ed6364844a57fb589e77e2877",
+      "Inputs": [
+        {
+          "Id": "09388d4df3584020bf516a9914913ec1",
+          "Name": "item0",
+          "Description": "Item Index #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "15c7bf401ad0499da12166fdee6c4776",
+          "Name": "item1",
+          "Description": "Item Index #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "74d3a8bfe8b1498c94b51c5bfad00110",
+          "Name": "item2",
+          "Description": "Item Index #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "896609230f2541af9ba1e7e888d633db",
+          "Name": "list",
+          "Description": "A list",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Makes a new list out of the given inputs"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.CreateList, CoreNodeModels",
+      "VariableInputPorts": true,
+      "NodeType": "ExtensionNode",
+      "Id": "135d04a71bf54a9585c8b6aecfc737af",
+      "Inputs": [
+        {
+          "Id": "ffc1a45399804c5ca12f0c818e00eb54",
+          "Name": "item0",
+          "Description": "Item Index #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4a5bfa4eefa24a2183c80c7c70d262ff",
+          "Name": "item1",
+          "Description": "Item Index #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a1822f856e3443418d78237ce323d911",
+          "Name": "item2",
+          "Description": "Item Index #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a07655dd58744a65b1ffb1a3c1862621",
+          "Name": "list",
+          "Description": "A list",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Makes a new list out of the given inputs"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "bc646d61750f4077b047f7acc61a2553",
+      "Inputs": [
+        {
+          "Id": "7d12a0dca0434989b5b740a3444a9301",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "c47c0cd00876484893dc5b79d64f2657",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "e9a3e145e39d4745a6efeef68676294f",
+      "Inputs": [
+        {
+          "Id": "2b4898509cf741beae49b674ff5951a1",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6d52aa34c4714147b0339af5eff6dbf3",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "6de65436da8e4d57833e93f2c548ea76",
+      "End": "c6a28dad8bf7410ba86d5f6ffa044492",
+      "Id": "1fba1e9084c848a6b7122dd1ee6519be"
+    },
+    {
+      "Start": "6de65436da8e4d57833e93f2c548ea76",
+      "End": "71da8d077736427b8f2bb5f9de2d662e",
+      "Id": "05c660bc22fd4b21b5cb36d1a002788b"
+    },
+    {
+      "Start": "6de65436da8e4d57833e93f2c548ea76",
+      "End": "1add6e58920c4343904746e8a1d9426c",
+      "Id": "61bd3a7558024fef9c62475c4761a7f6"
+    },
+    {
+      "Start": "6de65436da8e4d57833e93f2c548ea76",
+      "End": "97c5ad84d1eb4955894b3451f1e8fa03",
+      "Id": "9a54460554b5407eaa2e1e445d5056f9"
+    },
+    {
+      "Start": "1a012c614fac448f9c351681cc0a76de",
+      "End": "95728e8364de4ba3a893e09a8e98dc43",
+      "Id": "64edc992db504cd9bede169d62192abb"
+    },
+    {
+      "Start": "e6c7f00287ac47428781dd5fd746365e",
+      "End": "1fb8aa17dc784be98a0bfc5c3428feea",
+      "Id": "8bf1caedda9c4284b108a60f11867d69"
+    },
+    {
+      "Start": "011b95b9af9f4aafbab6348b9f5f3957",
+      "End": "2b4060818b974148ac57ad8ff997fe42",
+      "Id": "12ea7485fc544b60a4b6bc8c6b5200f3"
+    },
+    {
+      "Start": "011b95b9af9f4aafbab6348b9f5f3957",
+      "End": "617faf000f3747e0adad06b18d60eaf4",
+      "Id": "da12d312679e42a39d9fd17e8f917648"
+    },
+    {
+      "Start": "011b95b9af9f4aafbab6348b9f5f3957",
+      "End": "6f59693aa8de4b2982bc52ad3f5f4ac7",
+      "Id": "24aa58271f824084969dd1e67076de5d"
+    },
+    {
+      "Start": "011b95b9af9f4aafbab6348b9f5f3957",
+      "End": "5b130f07272f4d0b8e0e6b22821b8cce",
+      "Id": "e0011440c0cd4b92b573a995e8ce86fc"
+    },
+    {
+      "Start": "011b95b9af9f4aafbab6348b9f5f3957",
+      "End": "4ab0fdd46f3f4c2897b3d14081703326",
+      "Id": "ef973710ad134c57bf94e25dbcbbd3c9"
+    },
+    {
+      "Start": "2d3cd7f9740a4a02af9fdfb7cab40e37",
+      "End": "9b7f8b1e7f884786acf26fc81513596b",
+      "Id": "a749c1ffc03e4b4495472d305c70b61a"
+    },
+    {
+      "Start": "eb2c33592af041b7b1c2171c902f5fb9",
+      "End": "a87891c2ddf94c9c87c625b1ec373925",
+      "Id": "4cf71b721f6b401597c8bf39ce9b580e"
+    },
+    {
+      "Start": "b6f9647988ef4c40a52c5b1610d4559f",
+      "End": "a37f2392ff2442ac99acd3a482703fed",
+      "Id": "b4e9a3b5cdac472eab9d5886f27cfd05"
+    },
+    {
+      "Start": "b6f9647988ef4c40a52c5b1610d4559f",
+      "End": "52f8978abc0947cea717255396e442ac",
+      "Id": "193abf32e997430bb072027c0c41405a"
+    },
+    {
+      "Start": "1dc015f8c7414f61b02c33f99365aa92",
+      "End": "5edebc947061499da1287c64cb5f6b95",
+      "Id": "144d7182ba074d6a93d5843910ad64ca"
+    },
+    {
+      "Start": "1dc015f8c7414f61b02c33f99365aa92",
+      "End": "c28122ce261e49968d4b878b1951a8d8",
+      "Id": "fb19c3f04e294d40a2a9d1f3d8aa508c"
+    },
+    {
+      "Start": "8e3fee3b473c4b9ab742a946a2fbdc76",
+      "End": "1a3d5b6eaf844b00b060d6efee3ead72",
+      "Id": "e5bf4d790d0c43a396a47e7fd8590111"
+    },
+    {
+      "Start": "8e3fee3b473c4b9ab742a946a2fbdc76",
+      "End": "55c844ccd0384159857ebaafc69d4db2",
+      "Id": "3afa37ae03724c10bce7f13d63aa7505"
+    },
+    {
+      "Start": "266ce24e37d648a4843621ca92d80de3",
+      "End": "a059f4eb6c06489984a5d3c0a0ca3a98",
+      "Id": "1b2aacc376ef4ab2b9a0cfbcea640aea"
+    },
+    {
+      "Start": "266ce24e37d648a4843621ca92d80de3",
+      "End": "7d12a0dca0434989b5b740a3444a9301",
+      "Id": "80010d4c58034029b80dff5f4740e639"
+    },
+    {
+      "Start": "1f38598fc9264cf5a2cf013995a13b47",
+      "End": "ec8c261d90504bfe947131610479a8ed",
+      "Id": "9aef9d3a869c4c418a5565d1468651db"
+    },
+    {
+      "Start": "1f38598fc9264cf5a2cf013995a13b47",
+      "End": "68a2e7b169084dbeab73f560d5d3f01a",
+      "Id": "1b6d5fd1e4904e379a44dfc33b5083de"
+    },
+    {
+      "Start": "703f1a26d1e34ab696b3bec3cbafc3fa",
+      "End": "cf9765fcdc34410cace7a0ff00b91138",
+      "Id": "5bb26e6951bc47e48711447f739429da"
+    },
+    {
+      "Start": "703f1a26d1e34ab696b3bec3cbafc3fa",
+      "End": "61da36b4171b4228bfd06ef1c18e652b",
+      "Id": "7892f651b47f4e029bb56a9a25e081b7"
+    },
+    {
+      "Start": "703f1a26d1e34ab696b3bec3cbafc3fa",
+      "End": "6e218bd99eb04d03b1b281dde2e65a99",
+      "Id": "f28a5e5a90314500b434ac83477da34d"
+    },
+    {
+      "Start": "703f1a26d1e34ab696b3bec3cbafc3fa",
+      "End": "c5368a4fbcc14816b0a5cc26246e2485",
+      "Id": "bb136f90f8e84ca69d368b005b7d2ee5"
+    },
+    {
+      "Start": "d6a7c53860394627b52675b5939f4b2f",
+      "End": "38620df9bddc41f0b3861489143200e5",
+      "Id": "aaa453c1b6f447ce9d71558b073f0e29"
+    },
+    {
+      "Start": "d6a7c53860394627b52675b5939f4b2f",
+      "End": "b4a546d17ce64fb781f419532e0b0a43",
+      "Id": "d7fbdd5a96cc4a149b9f8f1da7d37b46"
+    },
+    {
+      "Start": "b18df361db6048af834e583252c9f224",
+      "End": "fed7731e2ba046c989b3c1ece81306d4",
+      "Id": "25a5b9dc61974f819e1f5763aef1cd84"
+    },
+    {
+      "Start": "7b4f423fe52645aaaa587ec9447928a9",
+      "End": "a07a7d02472240c29c0e5947f4040d9b",
+      "Id": "618e27df365548b0aaa0b771fe647d5d"
+    },
+    {
+      "Start": "3a42959b137a473aa4b5b35003298aee",
+      "End": "9cb7d9fe80874d588134a05090720f58",
+      "Id": "ac7e7e89bfdc4d0bb00608bc35e8d14c"
+    },
+    {
+      "Start": "4b6c21b1233041feb8b89b40f4099723",
+      "End": "a2c1f87673564376ab21afe33995d5a5",
+      "Id": "c192b9bb5eb84059b516fa224604d668"
+    },
+    {
+      "Start": "4b6c21b1233041feb8b89b40f4099723",
+      "End": "d0cf3fa61c2341da80913a89356eafc9",
+      "Id": "912c28e4c9be403a98a6cfede4f991f3"
+    },
+    {
+      "Start": "bb0b9221b6f04ceebedc303bca8c4f20",
+      "End": "0e6ffff11e844900bfbb2a9e492a00c0",
+      "Id": "172ce663e08b4b509012cd5a80cd8cd0"
+    },
+    {
+      "Start": "bb0b9221b6f04ceebedc303bca8c4f20",
+      "End": "ffc1a45399804c5ca12f0c818e00eb54",
+      "Id": "ffd5352e22a8478ea1cd42ee942d04e6"
+    },
+    {
+      "Start": "5c973639582c4e1096c31e6040f77fad",
+      "End": "2be7729c379e4e5a93b00cdc8f894559",
+      "Id": "d910929d1f2a4751b8c8d95aff029e3d"
+    },
+    {
+      "Start": "5c973639582c4e1096c31e6040f77fad",
+      "End": "4a5bfa4eefa24a2183c80c7c70d262ff",
+      "Id": "4b21ae8fae484b2790cf1dbea5b03753"
+    },
+    {
+      "Start": "634421f9137f4ac580c6c2f794a8a40d",
+      "End": "77b91a56753e48a892d06c75f4501325",
+      "Id": "06eb8df28c3e40d284e394b889277eeb"
+    },
+    {
+      "Start": "634421f9137f4ac580c6c2f794a8a40d",
+      "End": "a1822f856e3443418d78237ce323d911",
+      "Id": "6fa315c2dc9948e5af1e2bea9189e37c"
+    },
+    {
+      "Start": "6bd8931a3645419b8e2b55117fe95d84",
+      "End": "4fbf7dcfe5184d17a0252e69382762ef",
+      "Id": "ada6d852f3b9420fa96d45b2d23e1b5b"
+    },
+    {
+      "Start": "6bd8931a3645419b8e2b55117fe95d84",
+      "End": "af3c160ef53f47dda49fe23e283e330e",
+      "Id": "e9367d6081f94e308715d4665c60ae63"
+    },
+    {
+      "Start": "5c1addd1456c45d8b6657f9ff02b6963",
+      "End": "d5ae147f559d43328dd4372ad478659a",
+      "Id": "421fbce0979f4a56b49c5aebac868cd8"
+    },
+    {
+      "Start": "8a69b5231b0d4dc59ad38e46f19b9e7b",
+      "End": "2b4898509cf741beae49b674ff5951a1",
+      "Id": "037017f41b8a4d2496a653560c3e807a"
+    },
+    {
+      "Start": "8eec401b0fcf4391b59b8a0caace12cf",
+      "End": "09388d4df3584020bf516a9914913ec1",
+      "Id": "c8c0fa4a344a4198b90b4cffa3f02542"
+    },
+    {
+      "Start": "5b39f553bf9c486ba1f1f84b1b18892c",
+      "End": "15c7bf401ad0499da12166fdee6c4776",
+      "Id": "5b06ff4b65744553a4c1c5107c24e655"
+    },
+    {
+      "Start": "55eb895fa9004436ace7c82d4b1df5d5",
+      "End": "74d3a8bfe8b1498c94b51c5bfad00110",
+      "Id": "9d927c04dc58458e9c9a38d25762123a"
+    },
+    {
+      "Start": "d8d64b0581274430a3c6b0a82d1d1f9d",
+      "End": "c90b5f6a253d479e9ef9a0af6a9b424b",
+      "Id": "5786a00c02bb41d6b832c4d1323194be"
+    },
+    {
+      "Start": "d8d64b0581274430a3c6b0a82d1d1f9d",
+      "End": "2a2519044c9940c1a83c840841348fd8",
+      "Id": "5fd68bbbd17d41699f2a75c47a3056bb"
+    },
+    {
+      "Start": "d8d64b0581274430a3c6b0a82d1d1f9d",
+      "End": "1b65df6a4c1c48cab1776db1a2839e16",
+      "Id": "a9763f57e6794180a6a5054ecd8645d5"
+    },
+    {
+      "Start": "d8d64b0581274430a3c6b0a82d1d1f9d",
+      "End": "b1c4f7580be6494a94b0351573a2d0b4",
+      "Id": "0d2bacd5f1a848048ccbc95f22328e1d"
+    },
+    {
+      "Start": "133c01ad9c9a4348bc0f7b8280b66b46",
+      "End": "8f3e268a6475479ba45a301c50c443a8",
+      "Id": "0a069ebde4684f0b8aa364f79fbdd0d4"
+    },
+    {
+      "Start": "896609230f2541af9ba1e7e888d633db",
+      "End": "dc2e280d5c2a471d9cd3e6e9076b9324",
+      "Id": "08e2124bf31145d694b8deee78ff9240"
+    },
+    {
+      "Start": "a07655dd58744a65b1ffb1a3c1862621",
+      "End": "c7e3ab1391834a70996355994910b011",
+      "Id": "1b4130cb4c88406d8ae27e226f714836"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -21.141258715012547,
+      "EyeY": 28.486363607930251,
+      "EyeZ": 70.016083789227267,
+      "LookX": 16.141258715012547,
+      "LookY": -17.486363607930251,
+      "LookZ": -78.016083789227267,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Rebar_Extractor",
+        "Id": "aec31d248f4b47d396eb23571ee307fd",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 248.88778037633176,
+        "Y": 35.38442175801228
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Categories",
+        "Id": "3a386fba67134c7aa3b64878b8478478",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -558.31720443334643,
+        "Y": 99.559387914010017
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "File From Path",
+        "Id": "fdfcf09d7d2e421fbdda2110e6be9961",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -290.78519293249758,
+        "Y": 275.95271953699455
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Data.ImportExcel",
+        "Id": "02a1215956ae49178bb55d611f81729f",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -114.47965871797737,
+        "Y": 254.19973966421151
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "File Path-Database Rebar Excel file",
+        "Id": "18f4d0508ba44fd6b4714d60c4b9ef21",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -561.2239024945759,
+        "Y": 251.50649252542371
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "aab2c9fdc32f4f54b1a50a6a7e8bb58b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -317.49593508657262,
+        "Y": 368.24102319496626
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "6ff8cbe0df21469a8ee80fe96e91da5c",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2036.1008818425075,
+        "Y": -563.48105720521062
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "90da93cfe9164c0f9962ac0d0b616b2a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 734.5348733729212,
+        "Y": -23.016420224876583
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "f7d8992189c64bd3b7bfcef2482f4a35",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 729.6115426310738,
+        "Y": -189.93622708466228
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "274855ed9ea943288a8baa9e9b8e2a06",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1707.4372084999798,
+        "Y": -563.48105720521062
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "edd220cfe9c34b1a93892851870e5737",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 736.53990820793592,
+        "Y": 130.2334932601276
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "b360a274192f4faabfd5d703257ec8a1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1306.1828562709343,
+        "Y": -563.48105720521062
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Write text note",
+        "Id": "60f31bebc9984423b724b199455ad78f",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1579.1342810624906,
+        "Y": 557.46074613635312
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "SHEET NAME",
+        "Id": "cbcba631abc3457c8273df3c87912b7e",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -559.34863349549119,
+        "Y": 579.86367646346889
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Write text note",
+        "Id": "566b3284fc514987a2473145d21801d4",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1587.7979093587969,
+        "Y": 283.05766905943489
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "e823005d839c43f082218475bcd68fec",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2152.9563392321156,
+        "Y": 102.17443024836859
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "3d7bc80f2879414ab7c3b3431f08a5e6",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2513.9659111321985,
+        "Y": 102.17443024836859
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Text Move",
+        "Id": "a4cd3b64bbc64ad8984baba25d7ab0a8",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -553.58071934839154,
+        "Y": 662.68098991441593
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Write text note",
+        "Id": "ca2fdd2283054e28b70d6fec561d7b39",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1582.13750509774,
+        "Y": 938.0919895491536
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Data Name",
+        "Id": "e3dbf8f8490642ebb72e43e9fca1fdea",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -561.44268221133973,
+        "Y": 777.30454168063784
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Mode",
+        "Id": "c979e82e107e4c33b411efeec4716132",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -558.82771921362553,
+        "Y": 913.20307336442465
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "2d79147d84e1450ba983dabe0c94d3f5",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2830.2957649809146,
+        "Y": 102.17443024836859
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Write Excel",
+        "Id": "74a374fc73fe4bcd8ab0a57ce5fade29",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2616.69806233903,
+        "Y": 1128.14653372149
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Excel Sheet Name",
+        "Id": "9fba880254bd4f35b275241dd273c3e2",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -547.95346363766737,
+        "Y": 1141.2705238063
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Time Stamp",
+        "Id": "311cad3571444aac80f5dc393f605882",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -551.57594689900486,
+        "Y": 1270.1400973759789
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "List Create",
+        "Id": "5ef475cc5908460490af9058611806c9",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2247.9244636870517,
+        "Y": 1137.6666298783994
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "List Create",
+        "Id": "f5c8352ed6364844a57fb589e77e2877",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2257.6309642713536,
+        "Y": 1298.4288162572366
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "List Create",
+        "Id": "135d04a71bf54a9585c8b6aecfc737af",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2260.04708926293,
+        "Y": 1459.044397407831
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "bc646d61750f4077b047f7acc61a2553",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2323.124916531624,
+        "Y": -563.48105720521062
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "e9a3e145e39d4745a6efeef68676294f",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2978.3050079371415,
+        "Y": 1103.9064063283802
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "23642a8bf5334ecdbb5115268a7e7c18",
+        "Title": "\"\"\"OUTS:\r\n[0] dic_cate_elements:\tDictionary Category (Body Concrete) Elements\r\n[1] dic_cate_volume:\tDictionary Category Volume (m3)\r\n[2] dic_cate_rebars:\tDictionary Category (Rebar)elements\r\n[3] dic_cate_rebars_volume:\tDictionary Category Rebar Volume (cm3)\r\n[4] dic_cate_rebars_weight:\tDictionary Category Rebar Weight (Kg)\r\n[5] dic_cate_rebars_weight_per_type:\tDictionary Category Rebar Weight per Type (Kg)(/Category/Type)\r\n[6] dic_cate_rebars_weight_ratio:\tDictionary Category Rebar Weight Ratio (kg/m3)(/Category)\r\n[7] dic_cate_rebars_weight_ratio_per_type:\tDictionary Category Elements (kg/m3)(/Category/Type)\r\n[8] dic_cate_rebars_length:\tDictionary Category Rebar Length (m)(/Category)\r\n[9] dic_cate_rebars_length_per_type:\tDictionary Category Rebar Length Per Type (m)(/Category/Type)\r\n[10] dic_cate_rebars_weight_ratio_per_type_combine:\tDictionary Category Elements (kg/m3)(/Category/Type) Ex: {\"D10;D20\":\"20;30\"}",
+        "Nodes": [
+          "aec31d248f4b47d396eb23571ee307fd"
+        ],
+        "Left": 238.88778037633176,
+        "Top": -327.61557824198769,
+        "Width": 408.69666666666672,
+        "Height": 482.0,
+        "FontSize": 14.0,
+        "InitialTop": 35.38442175801228,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 353.0,
+        "Background": "#FFFFC999"
+      },
+      {
+        "Id": "d54dce34ba2f45589b8144680667d733",
+        "Title": "REBAR INFO EXTRACTING",
+        "Nodes": [
+          "fdfcf09d7d2e421fbdda2110e6be9961",
+          "02a1215956ae49178bb55d611f81729f",
+          "18f4d0508ba44fd6b4714d60c4b9ef21",
+          "aab2c9fdc32f4f54b1a50a6a7e8bb58b",
+          "3a386fba67134c7aa3b64878b8478478"
+        ],
+        "Left": -571.2239024945759,
+        "Top": 46.559387914010017,
+        "Width": 696.74424377659852,
+        "Height": 424.68163528095624,
+        "FontSize": 36.0,
+        "InitialTop": 99.559387914010017,
+        "InitialHeight": 413.68163528095624,
+        "TextblockHeight": 43.0,
+        "Background": "#FFFFC999"
+      },
+      {
+        "Id": "9f3fa41bbedb43f1949d97588573ec37",
+        "Title": "[6] dic_cate_rebars_weight_ratio:\tDictionary Category Rebar Weight Ratio (kg/m3)(/Category)",
+        "Nodes": [
+          "f7d8992189c64bd3b7bfcef2482f4a35"
+        ],
+        "Left": 719.6115426310738,
+        "Top": -249.93622708466228,
+        "Width": 296.69666666666666,
+        "Height": 153.0,
+        "FontSize": 14.0,
+        "InitialTop": -189.93622708466228,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 50.0,
+        "Background": "#FFFFC999"
+      },
+      {
+        "Id": "0827be1c4376471b828125a477a87f7e",
+        "Title": "[7] dic_cate_rebars_weight_ratio_per_type:\tDictionary Category Elements (kg/m3)(/Category/Type)",
+        "Nodes": [
+          "90da93cfe9164c0f9962ac0d0b616b2a"
+        ],
+        "Left": 724.5348733729212,
+        "Top": -67.016420224876583,
+        "Width": 352.69666666666672,
+        "Height": 137.0,
+        "FontSize": 14.0,
+        "InitialTop": -23.016420224876583,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 34.0,
+        "Background": "#FFFFC999"
+      },
+      {
+        "Id": "923a126e79cc42149a9d57b41c66e5de",
+        "Title": "dic_cate_rebars_weight_ratio_per_type_combine:\tDictionary Category Elements (kg/m3)",
+        "Nodes": [
+          "edd220cfe9c34b1a93892851870e5737"
+        ],
+        "Left": 726.53990820793592,
+        "Top": 86.2334932601276,
+        "Width": 408.69666666666672,
+        "Height": 137.0,
+        "FontSize": 14.0,
+        "InitialTop": 130.2334932601276,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 34.0,
+        "Background": "#FFFFC999"
+      },
+      {
+        "Id": "0ac5e3a19eaf4d0eab99d65a6134d6a6",
+        "Title": "WRITE TEXT NOTE",
+        "Nodes": [
+          "60f31bebc9984423b724b199455ad78f",
+          "566b3284fc514987a2473145d21801d4",
+          "ca2fdd2283054e28b70d6fec561d7b39",
+          "83c9b149be804793bbdaa3d33214a1de",
+          "368864f6b92a42ee9b1375ac8011d9d6",
+          "a2b43e151ff846f09bd70800b602f41c"
+        ],
+        "Left": 1345.889777668378,
+        "Top": 230.05766905943489,
+        "Width": 444.90813169041894,
+        "Height": 957.03432048971877,
+        "FontSize": 36.0,
+        "InitialTop": 283.05766905943489,
+        "InitialHeight": 832.82606404612648,
+        "TextblockHeight": 43.0,
+        "Background": "#FF48B9FF"
+      },
+      {
+        "Id": "ef976d7c81ef4c7dbad7541c61221902",
+        "Title": "WRITE TEXT NOTE",
+        "Nodes": [
+          "a4cd3b64bbc64ad8984baba25d7ab0a8",
+          "e3dbf8f8490642ebb72e43e9fca1fdea",
+          "c979e82e107e4c33b411efeec4716132",
+          "cbcba631abc3457c8273df3c87912b7e"
+        ],
+        "Left": -571.44268221133973,
+        "Top": 526.86367646346889,
+        "Width": 594.94803713705187,
+        "Height": 525.33939690095576,
+        "FontSize": 36.0,
+        "InitialTop": 579.86367646346889,
+        "InitialHeight": 478.33939690095576,
+        "TextblockHeight": 43.0,
+        "Background": "#FFA4E1FF"
+      },
+      {
+        "Id": "249f2eab282b4af49894d059b60165a3",
+        "Title": "WRITE EXCEL",
+        "Nodes": [
+          "74a374fc73fe4bcd8ab0a57ce5fade29",
+          "5ef475cc5908460490af9058611806c9",
+          "f5c8352ed6364844a57fb589e77e2877",
+          "135d04a71bf54a9585c8b6aecfc737af",
+          "b88386eeaf3f4c3babf7cb1ba31721e2"
+        ],
+        "Left": 2237.9244636870517,
+        "Top": 1075.14653372149,
+        "Width": 556.77359865197832,
+        "Height": 528.897863686341,
+        "FontSize": 36.0,
+        "InitialTop": 1128.14653372149,
+        "InitialHeight": 475.897863686341,
+        "TextblockHeight": 43.0,
+        "Background": "#FFD4B6DB"
+      },
+      {
+        "Id": "da1072b051a04320bd2adab3d4133fa9",
+        "Title": "EXCEL",
+        "Nodes": [
+          "9fba880254bd4f35b275241dd273c3e2",
+          "311cad3571444aac80f5dc393f605882"
+        ],
+        "Left": -561.57594689900486,
+        "Top": 1088.2705238063,
+        "Width": 259.62248326133749,
+        "Height": 274.869573569679,
+        "FontSize": 36.0,
+        "InitialTop": 1141.2705238063,
+        "InitialHeight": 273.869573569679,
+        "TextblockHeight": 43.0,
+        "Background": "#FFD4B6DB"
+      },
+      {
+        "Id": "83c9b149be804793bbdaa3d33214a1de",
+        "Title": "[0]: View Name\r\n[1]: Data (dict)\r\n[2]: Rebar Data (list from Excel)\r\n[3]: Textnote Y offset\r\n[4]: Data Name / Tittle\r\n[5]: Mode of converting data\r\n[6]: Time stamp\r\n\r\n",
+        "Nodes": [],
+        "Left": 1374.7187454608529,
+        "Top": 975.88373310556142,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "b88386eeaf3f4c3babf7cb1ba31721e2",
+        "Title": "[0]: View Name\r\n[1]: Data (list[dict])\r\n[2]: Rebar Data (list from Excel)\r\n[3]: Sheet Name (list[str])\r\n[4]: Time stamp\r\n[5]: Data Names",
+        "Nodes": [],
+        "Left": 2413.2359341020815,
+        "Top": 1192.7365071819634,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "368864f6b92a42ee9b1375ac8011d9d6",
+        "Title": "[0]: View Name\r\n[1]: Data (dict)\r\n[2]: Rebar Data (list from Excel)\r\n[3]: Textnote Y offset\r\n[4]: Data Name / Tittle\r\n[5]: Mode of converting data\r\n[6]: Time stamp\r\n\r\n",
+        "Nodes": [],
+        "Left": 1355.889777668378,
+        "Top": 597.92464539431637,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "a2b43e151ff846f09bd70800b602f41c",
+        "Title": "[0]: View Name\r\n[1]: Data (dict)\r\n[2]: Rebar Data (list from Excel)\r\n[3]: Textnote Y offset\r\n[4]: Data Name / Tittle\r\n[5]: Mode of converting data\r\n[6]: Time stamp\r\n\r\n",
+        "Nodes": [],
+        "Left": 1377.9097165364497,
+        "Top": 326.02537428728544,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": -2547.6802000075677,
+    "Y": -906.31042128896115,
+    "Zoom": 1.1114106611476522
+  }
+}

@@ -12,7 +12,7 @@
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
-      "Code": "import clr, time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\n# from System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\ndef write_excel(excel_path,sheet_name,row,column,data):\r\n    global debugger\r\n    excel_app = Excel.ApplicationClass()\r\n    excel_app.Visible = show_excel    \r\n    workbook = excel_app.Workbooks.Open(excel_path)\r\n    worksheets = workbook.Worksheets\r\n    sheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n    \r\n\r\n    if data.__class__.__name__ == \"str\":\r\n        sheet.Cells(row,column).Value = data\r\n    \r\n    \r\n    \r\n    workbook.Close(True,excel_path)\r\n\r\nexcel_path = IN[0]\r\nsheet_name = IN[1]\r\nshow_excel = IN[2]\r\n\r\ndebugger = []\r\n\r\n\r\n# write excel:\r\nwrite_excel(excel_path,sheet_name,10,10,\"Data\")\r\n\r\n# dic_data = {}\r\n# for r in range(1,row+1):\r\n#     try:\r\n#         dic_data[str(r)] = [sheet.Cells(r,c).Text for c in range(1,column+1)]\r\n#         # debugger.append(sheet.Cells(r,column).Text)\r\n#     except:\r\n#         pass\r\n\r\n\r\nOUT = \"string\".__class__.__name__\r\n\r\n\r\n# if not show_excel:\r\n# \ttime.sleep(5)\r\n# \texcel_app.Quit()",
+      "Code": "import clr, time,os\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\n# from System.Runtime.InteropServices import Marshal\r\nimport Microsoft.Office.Interop.Excel as Excel\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\n#---------------------------------------------------------------------------------------#\r\ndef write_excel(excel_path,sheet_name,row,column,data):\r\n\tglobal debugger      \r\n\texcel_app = Excel.ApplicationClass()\r\n\texcel_app.Visible = show_excel\r\n\tworkbook = excel_app.Workbooks.Open(excel_path)\r\n\tworksheets = workbook.Worksheets\r\n\tsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]    \r\n\tif data.__class__.__name__ == \"str\":\r\n\t\tsheet.Cells(row,column).Value = data       \r\n\ttry:\r\n\t\tworkbook.Close(SaveChanges = True,Filename = excel_path)\r\n\texcept Exception as ex:\r\n\t\tdebugger.append(ex)\r\n\t\tpass\r\n\r\ndef write_excel_2(file_name,dir_path,sheet_name,row,column,data):\r\n\tglobal debugger\r\n\ttime_ = time.strftime(\"%y%m%d %H%M%S\",time.localtime(time.time()))\r\n\texcel_path = \"{0}-{1}{2}\".format(\"\\\\\".join([dir_path,file_name]),time_ ,\".xlsx\")\r\n\t\r\n\texcel_app = Excel.ApplicationClass()\r\n\texcel_app.Visible = show_excel\t\r\n\tactive_workbook = excel_app.ActiveWorkbook\r\n\tif active_workbook == None:\r\n\t\texcel_app.Workbooks.Add()\r\n\t\tactive_workbook = excel_app.ActiveWorkbook\r\n\r\n\tworksheets = active_workbook.Worksheets\r\n\tif not sheet_name in [worksheets(i+1).Name for i in range(worksheets.Count)]:\r\n\t\tsheet = worksheets.Add()\r\n\t\tsheet.Name = sheet_name\r\n\telse:\r\n\t\tsheet = [worksheets(i+1) for i in range(worksheets.Count) if worksheets(i+1).Name == sheet_name][0]\r\n\t# WRITE DATA\r\n\tif data.__class__.__name__ == \"str\":\r\n\t\tsheet.Cells(row,column).Value = data\r\n\tif data.__class__.__name__ == \"list\":\r\n\t\tfor d in data:\r\n\t\t\tif not d.__class__.__name__ == \"list\":\r\n\t\t\t\tsheet.Cells(row + data.index(d),column).Value = d\r\n\t\t\telse:\r\n\t\t\t\tfor c in d:\r\n\t\t\t\t\tsheet.Cells(row + data.index(d),column + d.index(c)).Value = c\r\n\tif data.__class__.__name__ == \"dict\":\r\n\t\tkeys = sorted(data) #list\r\n\t\tfor k in keys:\r\n\t\t\tr = keys.index(k)\r\n\t\t\tc = 1\r\n\t\t\tsheet.Cells(row + r,column).Value = k\t\t\t\r\n\t\t\tif data[k].__class__.__name__ in [\"str\",\"float\"] :\r\n\t\t\t\tsheet.Cells(row + r,column + c).Value = data[k]\r\n\t\t\t# if data[d].__class__.__name__ == \"dict\":\r\n\t\t\t# \tsheet.Cells(row + r,column).Value = data[d]\t\r\n\t\r\n\t# save then close\r\n\tactive_workbook.SaveAs(Filename = excel_path)\r\n\t#active_workbook.Close()\r\n\t#excel_app.Quit()\r\n\treturn 0\r\n\r\ndef dic_to_list(dic,column_types,col_head_first = \"Category\"):\r\n\t\"\"\"\r\n\tdic (dict): Từ điển Dữ liệu Ex: {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\t\t\t\t\t\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\t\t\t\t\t\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\tcolumn_types (list): Danh sách Tên cột  Ex: [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\"]\r\n\t---\r\n\t[['Category', 'D10', 'D12', 'D14', 'D16', 'D18']\r\n\t['a', 10, 0, 0, 16, 0, 20]\r\n\t['b', 11, 0, 0, 17, 0, 21]\r\n\t['c', 12, 0, 0, 18, 0, 22]]\r\n\t\"\"\"\r\n\tglobal time_start,data_name\r\n\ttry:\r\n\t\tif not dic.__class__.__name__ == \"dict\": # verify if dic not dict\r\n\t\t\traise Exception(\"Not dict\")\r\n\t\tcolumn_types = sorted([str(i) for i in column_types]) # ensure sorted list of strng\r\n\t\tcontent = []\r\n\t\tcontent.append(data_name)\r\n\t\tcontent.append(time_start)\r\n\r\n\t\theaders = []\r\n\t\theaders.append(col_head_first)\r\n\t\theaders.extend(column_types)\r\n\r\n\t\tcontent.append(headers)\r\n\t\tkeys = sorted(dic)\r\n\r\n\t\tdic_text={} # primitive Column head\r\n\t\tfor ttt in column_types:\r\n\t\t\tdic_text[ttt] = 0\r\n\t\tnew_dic = {}\r\n\r\n\t\tfor d in keys:\r\n\t\t\ttry:\r\n\t\t\t\tline = []\r\n\t\t\t\tline.append(d) # Category\r\n\t\t\t\t\r\n\t\t\t\tnew_d = dic_text.copy()\r\n\t\t\t\tnew_d.update(dic[d])\r\n\t\t\t\t# new_dic[d] = new_d\r\n\t\t\t\tline.extend([new_d[w] for w in sorted(new_d)]) # rebar weight ratio / category / type\r\n\t\t\t\tcontent.append(line)\r\n\t\t\texcept:\r\n\t\t\t\tpass\t\t\r\n\t\treturn content\r\n\texcept:\r\n\t\treturn sorted(dic)\r\n\r\ndef dictionary_to_dict(dic):\r\n\t\"\"\"Use for converting Dynamo Dictionary to Python dict\r\n\tApply for {'key':{'key':{}}}\r\n\t\"\"\"\t\r\n\tif dic.__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\tdic = dict(dic)\t\t\r\n\ttry:\r\n\t\tfor d in dic:\t\t\t\r\n\t\t\tif dic[d].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\tdic[d] = dict(dic[d])\r\n\t\t\ttry:\r\n\t\t\t\tfor c in dic[d]:\r\n\t\t\t\t\tif dic[d][c].__class__.__name__ == \"Dictionary[object, object]\":\r\n\t\t\t\t\t\tdic[d][c] = dict(dic[d][c])\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\texcept:\r\n\t\tpass\r\n\treturn dic\r\n\r\ndir_path = IN[0]\r\nsheet_name = IN[1]\r\nshow_excel = IN[2]\r\nfile_name = IN[3]\r\n\r\ndebugger = []\r\nexcel_path = \"\\\\\".join([dir_path,file_name]) + \".xlsx\"\r\ntime_start=\"\"\r\ndata_name=\"\"\r\n\r\ndata1 = [1,2,3,4]\r\ndata2 = IN[4]\r\n\r\nddd = {\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\nct = [\"D10\",\"D12\",\"D14\",\"D16\",\"D18\",\"D20\"]\r\n\r\nOUT = write_excel_2(file_name,dir_path,sheet_name,1,1,dic_to_list(ddd,ct)),debugger\r\n\r\n\r\n# if not show_excel:\r\n# \ttime.sleep(5)\r\n# \texcel_app.Quit()",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Id": "45ca9cf0d1e84b9ba3c606eb3d6e0dd2",
@@ -39,6 +39,24 @@
           "Id": "1c1fca95c00c4b6f89645bf2541405e3",
           "Name": "IN[2]",
           "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "694324b7c1164692ad55ae72e7869462",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a1af781e98fa4f419df7d357f3d098ae",
+          "Name": "IN[4]",
+          "Description": "Input #4",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -89,141 +107,9 @@
       "Description": "Visualize the output of node."
     },
     {
-      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
-      "NodeType": "FunctionNode",
-      "FunctionSignature": "DSOffice.Data.ExportExcel@string,string,int,int,var[][],bool",
-      "Id": "611a36a21db04d2a8cc3eccffae7a8a2",
-      "Inputs": [
-        {
-          "Id": "39c5b9bf8c0e4a0c91b38ccbbf9bfcab",
-          "Name": "filePath",
-          "Description": "File path to the Microsoft Excel spreadsheet.\n\nstring",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "3eca3e4f904e4686bdfeb427f1791388",
-          "Name": "sheetName",
-          "Description": "Name of the workseet to write data to.\n\nstring",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "4acb24a18f9b4f70a562addb90730bbf",
-          "Name": "startRow",
-          "Description": "Start row for writing data. Enter 0 for Row 1, 1 for Row 2, etc.\n\nint",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "4b28fd85520d483ea0e18e0148c6286a",
-          "Name": "startCol",
-          "Description": "Start column for writing data. Enter 0 for Column A, 1 for Column B, etc.\n\nint",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "1fa29675b37e4cdd8e7f63216415a5fb",
-          "Name": "data",
-          "Description": "Data to write to the spreadsheet.\n\nvar[][]",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "6e2c9c22e6044dfab2b77902708063dd",
-          "Name": "overWrite",
-          "Description": "bool\nDefault value : false",
-          "UsingDefaultValue": true,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Outputs": [
-        {
-          "Id": "16b4ea25858943e3ad998d96f4c2aed5",
-          "Name": "data",
-          "Description": "Data written to the spreadsheet.",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Auto",
-      "Description": "Write data to a Microsoft Excel spreadsheet. Data is written by row with sublists to be written in successive rows. Rows and columns are zero-indexed; for example, the value in the data list at [0,0] will be written to cell A1. Null values and empty lists are written to Excel as empty cells. This node requires Microsoft Excel to be installed.\n\nData.ExportExcel (filePath: string, sheetName: string, startRow: int, startCol: int, data: var[][], overWrite: bool = false): var[][]"
-    },
-    {
-      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
-      "NodeType": "FunctionNode",
-      "FunctionSignature": "DSOffice.Data.ImportExcel@var,string,bool,bool",
-      "Id": "13113420bf2846a99cbb63474e106e7e",
-      "Inputs": [
-        {
-          "Id": "be3fd25d4e6047ef87790c1d459a4f16",
-          "Name": "file",
-          "Description": "File representing the Microsoft Excel spreadsheet.\n\nvar",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "a4c5889ecad34c0e9971c3535d326fc2",
-          "Name": "sheetName",
-          "Description": "Name of the worksheet containing the data.\n\nstring",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "060eff2320394584ae226b4b76cd84d7",
-          "Name": "readAsStrings",
-          "Description": "Toggle to switch between reading Excel file as strings.\n\nbool\nDefault value : false",
-          "UsingDefaultValue": true,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "411d708923bd4b8ba54b78776c51cf99",
-          "Name": "showExcel",
-          "Description": "Toggle to switch between showing and hiding the main Excel window.\n\nbool\nDefault value : true",
-          "UsingDefaultValue": true,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Outputs": [
-        {
-          "Id": "f91cd1b09e5e46e19c220cd8b13fcdb3",
-          "Name": "data",
-          "Description": "Rows of data from the Excel worksheet.",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Auto",
-      "Description": "Read data from a Microsoft Excel spreadsheet. Data is read by row and returned in a series of lists by row. Rows and columns are zero-indexed; for example, the value in cell A1 will appear in the data list at [0,0]. This node requires Microsoft Excel to be installed.\n\nData.ImportExcel (file: var, sheetName: string, readAsStrings: bool = false, showExcel: bool = true): var[][]"
-    },
-    {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
-      "InputValue": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\excel_IO\\Book1.xlsx",
+      "InputValue": "TestFile",
       "Id": "daa6e13828fc45a38d9422fea42a59fa",
       "Inputs": [],
       "Outputs": [
@@ -243,7 +129,7 @@
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
-      "InputValue": "Sheet1",
+      "InputValue": "Rebar_Info",
       "Id": "05dce35fccbb44d38707b4b237342142",
       "Inputs": [],
       "Outputs": [
@@ -279,6 +165,85 @@
       ],
       "Replication": "Disabled",
       "Description": "Selection between a true and false."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "F:\\_NGHIEN CUU\\_Github\\py_dynamo_revit\\excel_IO",
+      "Id": "b6ee861d54354b378f03600200af068f",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f73a797059f043eab6f37163232f93e9",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "data2 = {\t\"a\":\"123\",\r\n\t\t\t\"b\":\"345\",\r\n\t\t\t\"c\":\"567\",\r\n\t\t\t\"d\":\"789\"}\r\nd4 = \t{\"a\":{\"D10\":10,\"D16\":16,\"D20\":20},\r\n\t\t\"b\":{\"D10\":11,\"D16\":17,\"D20\":21},\r\n\t\t\"c\":{\"D10\":12,\"D16\":18,\"D20\":22}}\r\n\r\nOUT = d4",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "61670b404c1447e6bfb9bf7092574a9c",
+      "Inputs": [
+        {
+          "Id": "5bcfbb570944496398e6426161ac473f",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "33215a53a00848b9ad48a1dbbd8a875f",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7c028fdb62c14135a55b5cb85f063551",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "77b5d468f6df46fb9671d4e270083bef",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "ffa03d084de14f71bf617df76ed83792",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
     }
   ],
   "Connectors": [
@@ -289,8 +254,13 @@
     },
     {
       "Start": "aa914df5cd22478f8a9b0f2c44b1355c",
-      "End": "a8c47b67182a4e698ae13b8e951cd647",
-      "Id": "f1278ed98f5e4f3c955b4fda8f87b69f"
+      "End": "694324b7c1164692ad55ae72e7869462",
+      "Id": "68edbd02dea1496bb4a9ab06b4c1c1fa"
+    },
+    {
+      "Start": "aa914df5cd22478f8a9b0f2c44b1355c",
+      "End": "77b5d468f6df46fb9671d4e270083bef",
+      "Id": "98e6a5a5dbd74b4895e284a52d06d1f6"
     },
     {
       "Start": "1fa6e614120f4924adaf1852ac977a6d",
@@ -298,9 +268,34 @@
       "Id": "75cd519538414565a12843e9886a6442"
     },
     {
+      "Start": "1fa6e614120f4924adaf1852ac977a6d",
+      "End": "33215a53a00848b9ad48a1dbbd8a875f",
+      "Id": "3f52d38b45bb476a96084efa79bfad23"
+    },
+    {
       "Start": "d86c6ae7d53e42098926c5053fdb9cb4",
       "End": "1c1fca95c00c4b6f89645bf2541405e3",
       "Id": "d79f5d0157754324942682a83115add5"
+    },
+    {
+      "Start": "d86c6ae7d53e42098926c5053fdb9cb4",
+      "End": "7c028fdb62c14135a55b5cb85f063551",
+      "Id": "6d5e3e22fada4cb4866da14c7c187f69"
+    },
+    {
+      "Start": "f73a797059f043eab6f37163232f93e9",
+      "End": "a8c47b67182a4e698ae13b8e951cd647",
+      "Id": "26b7b339f3604fd2811aa1ad4a941a44"
+    },
+    {
+      "Start": "f73a797059f043eab6f37163232f93e9",
+      "End": "5bcfbb570944496398e6426161ac473f",
+      "Id": "8024b8d7ed29435aa8010eec473adf7f"
+    },
+    {
+      "Start": "ffa03d084de14f71bf617df76ed83792",
+      "End": "a1af781e98fa4f419df7d357f3d098ae",
+      "Id": "a7b16e0048ce4ff78dfe40300cd84462"
     }
   ],
   "Dependencies": [],
@@ -335,8 +330,8 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -38.837821146692477,
-        "Y": 53.053745587230566
+        "X": -30.8613780338794,
+        "Y": 128.782639269976
       },
       {
         "ShowGeometry": true,
@@ -345,38 +340,18 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 206.36386122060708,
-        "Y": -33.322170621743638
+        "X": 241.27561721001484,
+        "Y": -95.886051438979862
       },
       {
         "ShowGeometry": true,
-        "Name": "Data.ExportExcel",
-        "Id": "611a36a21db04d2a8cc3eccffae7a8a2",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "X": 30.38058335105643,
-        "Y": 434.48236561314712
-      },
-      {
-        "ShowGeometry": true,
-        "Name": "Data.ImportExcel",
-        "Id": "13113420bf2846a99cbb63474e106e7e",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "X": -214.74872513428727,
-        "Y": 438.84425899416749
-      },
-      {
-        "ShowGeometry": true,
-        "Name": "Excel file path",
+        "Name": "File Name",
         "Id": "daa6e13828fc45a38d9422fea42a59fa",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -418.40512476772142,
-        "Y": 117.10197337568471
+        "X": -404.20179309296867,
+        "Y": -54.452562937301792
       },
       {
         "ShowGeometry": true,
@@ -385,8 +360,8 @@
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": -379.72560408164077,
-        "Y": 209.257933397256
+        "X": -384.83979031718923,
+        "Y": 202.09807266748817
       },
       {
         "ShowGeometry": true,
@@ -397,11 +372,31 @@
         "Excluded": false,
         "X": -382.87416549651266,
         "Y": 293.25234516580315
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Excel file path",
+        "Id": "b6ee861d54354b378f03600200af068f",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -418.63929294109641,
+        "Y": 72.995044467915847
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "61670b404c1447e6bfb9bf7092574a9c",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -233.132597878202,
+        "Y": 486.841893426291
       }
     ],
     "Annotations": [],
-    "X": 410.9863616250193,
-    "Y": 347.05588861056509,
-    "Zoom": 0.78033770122794277
+    "X": 622.50447581810238,
+    "Y": 258.71936574435756,
+    "Zoom": 0.73064114341857289
   }
 }
