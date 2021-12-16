@@ -1,0 +1,475 @@
+{
+  "Uuid": "d644655c-07e1-41a1-ace7-af4ea8aa2bf1",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Parameter-tranfer-Param-A-to-B-Category-211026",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "168f37ee55554cb69d08299a6e0f94aa",
+      "Name": "Category",
+      "Type": "string",
+      "Value": "Floors",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "2a72c2da4bad4c37bfaf390b720e5120",
+      "Name": "Param A",
+      "Type": "string",
+      "Value": "Structural",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "11a0bdcc3a2f49fca440c85574e7ec03",
+      "Name": "Param B",
+      "Type": "string",
+      "Value": "test_int",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "da7eca1a5e6c4632811a1a9b308826f4",
+      "Name": "Help",
+      "Type": "string",
+      "Value": "COF_GEN__Length\r\nCOF_GEN__Width\r\nCOF_GEN__Height\r\nCOF_GEN__Thickness\r\nCOF_GEN__Perimeter\r\nCOF_GEN__Area\r\nCOF_GEN__Volume\r\n",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "6cd4de6c9cf545b5b8afe354c9142b09",
+      "Name": "Help",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nCurtain Panels\r\nRoofs",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "918eb3a34ab94b6aac975de5c2743881",
+      "Name": "Category",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nGeneric Models",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nimport math\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\n#----------------------------------------------------------------#\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\texcept Exception as ex:\r\n\t\tpass\r\ndef getAllElementsOfCategories(doc,cates):\r\n\tglobal debugger\r\n\tcategories = list(doc.Settings.Categories)\r\n\tcategory_names = [c.Name for c in categories]\r\n\telements = []\r\n\tfor cat in cates:\r\n\t\ttry:\r\n\t\t\tif cat in category_names:\r\n\t\t\t\tc = categories[int(category_names.index(cat))]\r\n\t\t\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\treturn elements\r\n\r\n\r\n#----------------------------------------------------------------#\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\ncout_succeed = 0\r\nresult = []\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n\r\n\r\n\r\ncates = IN[0].splitlines()\r\nparam_A = IN[1]\r\nparam_B = IN[2]\r\n\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nsetupUnit(doc)\r\nelements = getAllElementsOfCategories(doc,cates)\r\nfor e in elements:\r\n    try:\r\n        par_A = e.LookupParameter(param_A)\r\n        if par_A  == None:\r\n        \tpar_A = doc.GetElement(e.GetTypeId()).LookupParameter(param_A)\r\n        value = par_A.AsString()\r\n        while value == None:\r\n        \tif par_A.StorageType == StorageType.Integer:\r\n        \t\tvalue = par_A.AsInteger()\r\n        \telif par_A.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or par_A.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n    \t\t\tvalue = par_A.AsValueString()[:-1]#round(par_A.AsDouble())\r\n        \telse:\r\n        \t\tvalue = par_A.AsValueString()#round(par_A.AsDouble()*304.8)\r\n        \t\t\r\n        result.append(value)\r\n        \r\n        par_B = e.LookupParameter(param_B)\r\n        if par_B.StorageType == StorageType.Double:\r\n        \tif par_B.DisplayUnitType == DisplayUnitType.DUT_CUBIC_METERS:\r\n        \t\tpar_B.Set(float(value)/0.0283168)\r\n    \t\telif par_B.DisplayUnitType == DisplayUnitType.DUT_SQUARE_METERS:\r\n        \t\tpar_B.Set(float(value)/0.092903)\r\n    \t\telif par_B.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or par_B.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n    \t\t\tpar_B.Set(math.radians(float(value)))\r\n    \t\telif par_B.DisplayUnitType == DisplayUnitType.DUT_METERS:\r\n    \t\t\tpar_B.Set((float(value)/304.8)/1000)\r\n    \t\telif par_B.DisplayUnitType == DisplayUnitType.DUT_CENTIMETERS:\r\n    \t\t\tpar_B.Set((float(value)/304.8)/10)\r\n    \t\telif par_B.DisplayUnitType == DisplayUnitType.DUT_MILLIMETERS:\r\n    \t\t\tpar_B.Set(float(value)/304.8)\r\n    \t\telse:\r\n    \t\t\tpar_B.Set(float(value))\r\n    \telif par_B.StorageType == StorageType.String:\r\n        \tpar_B.Set(str(value))\r\n    \telif par_B.StorageType == StorageType.Integer:\r\n        \tpar_B.Set(int(value))\r\n        cout_succeed += 1\r\n    except Exception as ex:\r\n        debugger.append(\"Exception in iterating elements : {}\".format(ex))\r\n        pass\r\n\r\n\r\nTransactionManager.Instance.TransactionTaskDone()\r\ntime_end = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = \"{0}/{1} Succeeded\".format(cout_succeed,len(elements)),time_start, time_end, elements, result, debugger",
+      "VariableInputPorts": true,
+      "Id": "ff34f549ddcc42e6bdce83e71aca7529",
+      "Inputs": [
+        {
+          "Id": "2ff5fc5ba3e04321b56f7185c7aba645",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "df34ec7c1fe845e19a9672d27f001830",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e3afaf7c2a2f407abf5d05a63a40522c",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "bbb469bd659d484dae4b52d3d7a3b1e8",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Floors",
+      "Id": "168f37ee55554cb69d08299a6e0f94aa",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "da30162998b44bb6a4a5cf61f8c38e75",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural",
+      "Id": "2a72c2da4bad4c37bfaf390b720e5120",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9948057611ef4cf28738814921b1e78f",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "test_int",
+      "Id": "11a0bdcc3a2f49fca440c85574e7ec03",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f1ccd414f0174b1e94e5298e3584ca93",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_GEN__Length\r\nCOF_GEN__Width\r\nCOF_GEN__Height\r\nCOF_GEN__Thickness\r\nCOF_GEN__Perimeter\r\nCOF_GEN__Area\r\nCOF_GEN__Volume\r\n",
+      "Id": "da7eca1a5e6c4632811a1a9b308826f4",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "1b9aa36ebba74f1b80e08892e1acd1ea",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nCurtain Panels\r\nRoofs",
+      "Id": "6cd4de6c9cf545b5b8afe354c9142b09",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5630f8ced3114650a956e5ce79c1ab77",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nGeneric Models",
+      "Id": "918eb3a34ab94b6aac975de5c2743881",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8c32f4893ac94614afee19b422cfcda9",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "1d4092d2f399413199c3fa563305701c",
+      "Inputs": [
+        {
+          "Id": "d9d2ce8379ac4fa38ee410aa33439141",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0ae3d49304b04c55af81fd543e437585",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "res[4];",
+      "Id": "f8c1292c18d0440c923c1b1eaf624740",
+      "Inputs": [
+        {
+          "Id": "709e1d46655a4df9a855bc25034b361c",
+          "Name": "res",
+          "Description": "res",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "29d4b12bb2964ec2ab3d9fe2e97146b0",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "4610d97c7b3449fa8474de749c776580",
+      "Inputs": [
+        {
+          "Id": "7e8dce905fa84ca2b6e72309d1110644",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "19c67604f977406bb8b26d867878b05e",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "bbb469bd659d484dae4b52d3d7a3b1e8",
+      "End": "d9d2ce8379ac4fa38ee410aa33439141",
+      "Id": "d4ac4e6968594643898b8459ece956a6"
+    },
+    {
+      "Start": "bbb469bd659d484dae4b52d3d7a3b1e8",
+      "End": "709e1d46655a4df9a855bc25034b361c",
+      "Id": "8273185c2bb54856b1b6ca2845e88954"
+    },
+    {
+      "Start": "da30162998b44bb6a4a5cf61f8c38e75",
+      "End": "2ff5fc5ba3e04321b56f7185c7aba645",
+      "Id": "f4e40432e5cf4e97a047190d18edfbde"
+    },
+    {
+      "Start": "9948057611ef4cf28738814921b1e78f",
+      "End": "df34ec7c1fe845e19a9672d27f001830",
+      "Id": "ecfa78f5d106463e9a9a424fe8ae52b0"
+    },
+    {
+      "Start": "f1ccd414f0174b1e94e5298e3584ca93",
+      "End": "e3afaf7c2a2f407abf5d05a63a40522c",
+      "Id": "77c02132d86d46b3aee0fb706c3df8fa"
+    },
+    {
+      "Start": "29d4b12bb2964ec2ab3d9fe2e97146b0",
+      "End": "7e8dce905fa84ca2b6e72309d1110644",
+      "Id": "40652923cf3248328ecfce4688f2f4a4"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "ff34f549ddcc42e6bdce83e71aca7529",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 189.90408349359416,
+        "Y": 150.14738525747592
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Category",
+        "Id": "168f37ee55554cb69d08299a6e0f94aa",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -17.15814474433563,
+        "Y": 117.14701190809581
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Param A",
+        "Id": "2a72c2da4bad4c37bfaf390b720e5120",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -56.9732110198774,
+        "Y": 225.28527208216889
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Param B",
+        "Id": "11a0bdcc3a2f49fca440c85574e7ec03",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -38.7942161510243,
+        "Y": 303.667159128387
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Help",
+        "Id": "da7eca1a5e6c4632811a1a9b308826f4",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -227.69818429184437,
+        "Y": 489.67074856419356
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Help",
+        "Id": "6cd4de6c9cf545b5b8afe354c9142b09",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -57.00517011839861,
+        "Y": 455.60178211803623
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Category",
+        "Id": "918eb3a34ab94b6aac975de5c2743881",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -286.21409425138313,
+        "Y": 248.54665284320814
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "1d4092d2f399413199c3fa563305701c",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 354.89648879172228,
+        "Y": 157.61705865338479
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Code Block",
+        "Id": "f8c1292c18d0440c923c1b1eaf624740",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 371.02865151532313,
+        "Y": 62.25556557037774
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "4610d97c7b3449fa8474de749c776580",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 584.68356464471515,
+        "Y": 104.88171350647167
+      }
+    ],
+    "Annotations": [],
+    "X": 644.38749379112289,
+    "Y": 162.92788633822909,
+    "Zoom": 0.98400607739336676
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "Uuid": "17503242-391d-4148-809f-4794f4a8912e",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Object-ID-Collector-211025",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Columns\r\nStructural Framing\r\nWalls\r\nFloors\r\nRoofs\r\nParts",
+      "Id": "b4a9a2b8cec24cb1b2de68b63c1008de",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "81227adde6a248f69e363ffad3df7c8a",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys,os\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\n\r\n#start\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\nresult = []\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n#functions\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\texcept Exception as ex:\r\n\t\tpass\r\ndef revitDir(doc):\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\r\n\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\r\ndef getAllElementsOfCategories(doc,cates):\r\n\tglobal debugger\r\n\tcategories = list(doc.Settings.Categories)\r\n\tcategory_names = [c.Name for c in categories]\r\n\telements = []\r\n\tfor cat in cates:\r\n\t\ttry:\r\n\t\t\tif cat in category_names:\r\n\t\t\t\tc = categories[int(category_names.index(cat))]\t\t\t\t\r\n\t\t\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\treturn elements\r\n\r\n#excecute\r\ncates = IN[1].splitlines()\r\nproject_number = IN[0]\r\nparam_name = IN[2]\r\nelements = getAllElementsOfCategories(doc,cates)\r\nfor e in elements:\r\n\ttry:\r\n\t\tdebugger.append(e.UniqueId)\r\n\r\n\texcept Exception as ex:\r\n\t\tpass\r\n\r\nrevit_dir = revitDir(doc)\r\nfile_name = revit_dir[1]+\".rvt\"\r\nfile_path = \"{0}{1}.rvt\".format(revit_dir[0],revit_dir[1])\r\nrevit_id_data_path = \"{0}{1}-IdData.txt\".format(revit_dir[0],revit_dir[1])\r\n\r\ncontent = \"\"\r\nlist_ = []\r\ntry:\r\n\tparam = elements[0].LookupParameter(param_name)\r\n\tif param.StorageType == StorageType.String:\r\n\t\t\r\n\t\tfor elem in elements:\r\n\t\t\ttry:\r\n\t\t\t\tpar = elem.LookupParameter(param_name)\t\t\t\t\r\n\t\t\t\tif par.AsString() != None:\r\n\t\t\t\t\tlist_.append(\"{0}\\t{1}\\t{2}\\t{3}\".format(elem.UniqueId,par.AsString(),file_name,elem.Id))\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\tcontent = \"\\n\".join(list_)\r\nexcept:\r\n\tpass\r\n\r\n# exists = None\r\n# if os.path.exists(revit_id_data_path):\r\n# \twith open(revit_id_data_path,\"r\") as ff:\r\n# \t\texists = [dict(line.split(\"\\t\")[0] = line.split(\"\\t\")[1]) for ff.readlines()]\r\n\r\n\r\nwith open(revit_id_data_path,\"w\") as f:\r\n\tf.write(content)\r\n\r\n#end\r\ntime_end = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = \"{0}/{1} Succeeded\".format(len(list_),len(elements)),time_start, time_end, debugger",
+      "VariableInputPorts": true,
+      "Id": "9ee10a98f9e04f80a5845b43a9a348db",
+      "Inputs": [
+        {
+          "Id": "605bd0da8f2a43afa647b68263b45bda",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "9636233f02134a9a9d6297702bca3bf1",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "02d7b1f6ba1c46f8b84e366dcd875f02",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "3ad8f57ab7c146deaca011e43d2619a7",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "79cfcc1d222d4af6ba0deb1045ed6eb3",
+      "Inputs": [
+        {
+          "Id": "4b6be55ceef94e31bc615809868a3e91",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9756d245ab954d629a0ab925cdf62e40",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "VM",
+      "Id": "116ebc28aad14a9cadb0f85e6494d962",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "08d499f16a55440982d74a668c3825e2",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__WorkItemNumber",
+      "Id": "cd660dfe5ed0472da0fc0dae259d4502",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "a9bb8156a62848d6a2d153fa8b6e0161",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "81227adde6a248f69e363ffad3df7c8a",
+      "End": "9636233f02134a9a9d6297702bca3bf1",
+      "Id": "e47c886e5714445db7d9a82fbd4449b0"
+    },
+    {
+      "Start": "3ad8f57ab7c146deaca011e43d2619a7",
+      "End": "4b6be55ceef94e31bc615809868a3e91",
+      "Id": "5bd323c44eb543fa8b7adc983301406f"
+    },
+    {
+      "Start": "08d499f16a55440982d74a668c3825e2",
+      "End": "605bd0da8f2a43afa647b68263b45bda",
+      "Id": "0a156c6198624d7faf85cafec798631a"
+    },
+    {
+      "Start": "a9bb8156a62848d6a2d153fa8b6e0161",
+      "End": "02d7b1f6ba1c46f8b84e366dcd875f02",
+      "Id": "427f9f9685b44846a36f42e7f48ee607"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.3.0.5885",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Categories",
+        "Id": "b4a9a2b8cec24cb1b2de68b63c1008de",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 114.97680366627623,
+        "Y": 425.86044734039774
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "9ee10a98f9e04f80a5845b43a9a348db",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 406.46365713005179,
+        "Y": 486.70063544852519
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "79cfcc1d222d4af6ba0deb1045ed6eb3",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 652.27756110210953,
+        "Y": 429.04363565874013
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Project Number",
+        "Id": "116ebc28aad14a9cadb0f85e6494d962",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 135.97274540801624,
+        "Y": 314.9181186253108
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "cd660dfe5ed0472da0fc0dae259d4502",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 100.0336818197361,
+        "Y": 642.55590979867338
+      }
+    ],
+    "Annotations": [],
+    "X": 120.2687923022458,
+    "Y": -199.57676793028935,
+    "Zoom": 1.0669527078898011
+  }
+}

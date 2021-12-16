@@ -1,0 +1,122 @@
+{
+  "Uuid": "5fe0ce9f-ffda-4c3c-a369-120587650260",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "CAD_Reading-211029",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "",
+      "Id": "43f704dbdb7742cd8afccaad655025c6",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5a46581d87e54fdda72803b5f2e39741",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\n\r\n# Place your code below this line\r\n\r\n# Assign your output to the OUT variable.\r\nOUT = 0",
+      "VariableInputPorts": true,
+      "Id": "9b0ed99051904d4e9454be5649657f5d",
+      "Inputs": [
+        {
+          "Id": "933fb463991f4438adbd82e0ccb07b0f",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "b5f7597132de4bf494b5a259bc274a74",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "5a46581d87e54fdda72803b5f2e39741",
+      "End": "933fb463991f4438adbd82e0ccb07b0f",
+      "Id": "da176037ebde4058bee1152e6ebf1968"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.3.0.5885",
+      "RunType": "Automatic",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "43f704dbdb7742cd8afccaad655025c6",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 104.0,
+        "Y": 181.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "9b0ed99051904d4e9454be5649657f5d",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 268.0,
+        "Y": 162.0
+      }
+    ],
+    "Annotations": [],
+    "X": 0.0,
+    "Y": 0.0,
+    "Zoom": 1.0
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "Uuid": "fdae145f-78da-46bb-81e8-90232a84378d",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Draw_chart-211205",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Chart",
+      "Id": "03dc8fccc1f94b61849d7d74bacae034",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5381930328b34f74a4814bc0e422c963",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry.Point as pt\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nimport Revit.Elements.TextNote as tn\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\nclr.AddReference(\"Microsoft.Office.Interop.Excel\")\r\nimport Microsoft.Office.Interop.Excel as Excel\r\nimport math\r\n#------------------------------------------------------------------------#\r\ndef get_sheet_view_by_search_string(search_string):\r\n\tglobal doc    \r\n\tviewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))\r\n\ttry:\r\n\t\tview_  = [v for v in viewCollector if search_string in v.Name][0]\r\n\t\treturn view_\r\n\texcept:\r\n\t\treturn\r\n\r\ndef get_sheet_view_2 (view_name,sheet_number = \"000\"):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc#, debugger\r\n\tview_sheet = get_sheet_view_by_search_string(view_name)\r\n\tif view_sheet == None:\r\n\t\ttry:\r\n\t\t\t# Get an available title block from document\r\n\t\t\tcollector = list(FilteredElementCollector(doc).OfClass(FamilySymbol).OfCategory(BuiltInCategory.OST_TitleBlocks))\r\n\t\t\tfs = collector[0]#.FirstElement()\t\t\r\n\t\t\tTransactionManager.Instance.EnsureInTransaction(doc)\t\r\n\t\t\tview_sheet = ViewSheet.Create(doc,fs.Id)\r\n\t\t\ttry:\r\n\t\t\t\tview_sheet.SheetNumber = sheet_number\r\n\t\t\texcept:\r\n\t\t\t\tview_sheet.SheetNumber = sheet_number*2\r\n\t\t\tview_sheet.Name = view_name\r\n\t\t\t# Delete Title Block\r\n\t\t\ttitle_blocks = list(FilteredElementCollector(doc,view_sheet.Id).OfCategory(BuiltInCategory.OST_TitleBlocks).WhereElementIsNotElementType().ToElements())\r\n\t\t\t[doc.Delete(t.Id) for t in title_blocks]\r\n\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\texcept Exception as ex:\r\n\t\t\t# debugger.append(ex)\r\n\t\t\tpass\r\n\treturn view_sheet\r\ndef write_text(viewId,text,position = None,typeId = None,rotate = None,text_option = None):\r\n\t\"\"\"\"\"\"\r\n\tglobal doc\r\n\tif doc.GetElement(viewId) == None:\r\n\t\tviewId = doc.ActiveView.Id\r\n\tif position == None:\r\n\t\tposition = XYZ()\r\n\tif typeId ==  None or doc.GetElement(typeId) == None or not doc.GetElement(typeId).__class__ == TextNoteType:\r\n\t\ttypeId = list(FilteredElementCollector(doc).OfClass(TextNoteType).WhereElementIsElementType())[0].Id\r\n\t\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\ttext_note = TextNote.Create(doc,viewId,position,text,typeId = typeId)\r\n\tif rotate:\r\n\t\tpass\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\treturn text_note\r\n\r\ndef draw_line (view,x,y,x1,y1):\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tP1 = XYZ(x/304.8,y/304.8,0)\r\n\tP2 = XYZ(x1/304.8,y1/304.8,0)\r\n\tL1 = Line.CreateBound(P1,P2)\r\n\tdc = doc.Create.NewDetailCurve(view,L1)\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn dc\r\n\r\ndef draw_line_by_angle_length(view,x,y,angle,length):\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tP1 = XYZ(x/304.8,y/304.8,0)\r\n\r\n\t\r\n\r\n\tP2 = XYZ(x1/304.8,y1/304.8,0)\r\n\tL1 = Line.CreateBound(P1,P2)\r\n\tdc = doc.Create.NewDetailCurve(view,L1)\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn dc\r\n\tpass\r\n\r\ndef draw_arc_start_end_third(view,x1,y1,x2,y2,x3,y3):\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tp1 = XYZ(x1/304.8,y1/304.8,0)\r\n\tp2 = XYZ(x2/304.8,y2/304.8,0)\r\n\tp3 = XYZ(x3/304.8,y3/304.8,0)\r\n\tarc = Arc.Create(p1,p2,p3)\r\n\tdc = doc.Create.NewDetailCurve(view,arc)\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn dc\r\ndef draw_elipse(view,x,y,x_Radius=10,y_Radius=10,x_Axis=None,y_Axis=None,start_Parameter=0,end_Parameter=7):\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tXYZcenter = XYZ(x/304.8,y/304.8,0)\r\n\tif x_Axis==None: x_Axis=XYZ(1/304.8,0,0)\r\n\tif y_Axis==None: y_Axis=XYZ(0,1/304.8,0)\r\n\telipse = Ellipse.CreateCurve(XYZcenter/304.8,x_Radius/304.8,y_Radius,x_Axis,y_Axis,start_Parameter,end_Parameter)\r\n\tdc = doc.Create.NewDetailCurve(view,elipse)\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn dc\r\n\r\ndef draw_rectange_by_2_corners(view,x1,y1,x2,y2):\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tp1 = XYZ(x1/304.8,y1/304.8,0)\r\n\tp2 = XYZ(x2/304.8,y1/304.8,0)\r\n\tp3 = XYZ(x2/304.8,y2/304.8,0)\r\n\tp4 = XYZ(x1/304.8,y2/304.8,0)\r\n\tl1 = Line.CreateBound(p1,p2)\r\n\tl2 = Line.CreateBound(p2,p3)\r\n\tl3 = Line.CreateBound(p3,p4)\r\n\tl4 = Line.CreateBound(p4,p1)\r\n\trec = [doc.Create.NewDetailCurve(view,l) for l in [l1,l2,l3,l4]]\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn rec\r\n\r\ndef draw_arrowhead_axis(view,p,angle,length = 5,rotate = 0):\r\n\t\"\"\"view: 2D VIEW\r\n\tangle: degree\r\n\tlength: mm\r\n\trotate: degree\"\"\"\r\n\tglobal doc\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tangle = math.radians(angle)\r\n\trotate = math.radians(rotate)\r\n\tlength = length / 304.8\r\n\r\n\tp1 = Transform.CreateRotationAtPoint(XYZ(0,0,1), - angle+rotate,p).OfPoint(Transform.CreateTranslation(XYZ(length,0,0)).OfPoint(p))\r\n\tp2 = Transform.CreateRotationAtPoint(XYZ(0,0,1), angle + math.pi+rotate,p).OfPoint(Transform.CreateTranslation(XYZ(length,0,0)).OfPoint(p))\r\n\r\n\tp = XYZ(p.X,p.Y,0)\r\n\tp1 = XYZ(p1.X,p1.Y,0)\r\n\tp2 = XYZ(p2.X,p2.Y,0)\r\n\r\n\tA_L1 = Line.CreateBound(p,p1)\r\n\tA_L2 = Line.CreateBound(p,p2)\r\n\r\n\tarrow = [doc.Create.NewDetailCurve(view,l) for l in [A_L1,A_L2]]\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn arrow\r\n \r\n\r\ndef draw_axis_xy(view,origin = None,x_length = 10,y_length = 10,angle = 45, arrow_length = 3):\r\n\tglobal doc\r\n\tx_length = x_length/304.8\r\n\ty_length = y_length/304.8\r\n\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\tP0 = XYZ(0,0,0)\r\n\tPx = XYZ(x_length,0,0)\r\n\tPy = XYZ(0,y_length,0)\r\n\r\n\t# Translate\r\n\tif not origin == None and origin.__class__.__name__ == \"XYZ\":\r\n\t\tP0 = translate_point(P0,origin)\r\n\t\tPx = translate_point(Px,origin)\r\n\t\tPy = translate_point(Py,origin)\t\t\r\n\t\r\n\tL1 = Line.CreateBound(P0,Px)\r\n\tL2 = Line.CreateBound(P0,Py)\r\n\tc_ = []\r\n\tc_.append(L1)\r\n\tc_.append(L2)\r\n\t\r\n\taxis = [doc.Create.NewDetailCurve(view,l) for l in c_]\r\n\r\n\taxis.extend(draw_arrowhead_axis(view,Px,angle,length = arrow_length,rotate = -90))\r\n\taxis.extend(draw_arrowhead_axis(view,Py,angle,length = arrow_length,rotate = 0))\r\n\t\r\n\tTransactionManager.Instance.TransactionTaskDone()\r\n\treturn axis\r\n\r\ndef draw_chart_column(view,origin = None,col_width = 5,col_height = [50,100,150],distance = 30,start_space = 10,col_head = ['Column1','Column2','Column3']):\r\n\tfor h in col_height:\r\n\t\thead = col_head[col_height.index(h)]\r\n\t\tx1 = start_space + (distance + col_width)*col_height.index(h)\r\n\t\ty1 = 0\r\n\t\tx2 = start_space + col_width + (distance + col_width)*col_height.index(h) \r\n\t\ty2 = h\r\n\t\tdraw_rectange_by_2_corners(view,x1,y1,x2,y2)\r\n\t\twrite_text(view.Id, str(head) ,position = XYZ(x1/304.8 , 0,0))\r\n\t\twrite_text(view.Id, str(h) ,position = XYZ(0, y2/304.8,0))\r\n\r\n\tdraw_axis_xy(\tview,origin = origin,\r\n\t\t\t\t\tx_length = (start_space + col_width + distance) * len(col_height),\r\n\t\t\t\t\ty_length =  max(col_height) + start_space,\r\n\t\t\t\t\tangle = 45, \r\n\t\t\t\t\tarrow_length = 3)\r\n\r\n\r\n\r\n\r\ndef draw_chart_pie():\r\n\tpass\r\n\r\ndef translate_point(p,vector):\r\n\tif p.__class__.__name__ == \"XYZ\" and vector.__class__.__name__ == \"XYZ\":\r\n\t\ttranslation = Transform.CreateTranslation(vector)\r\n\t\tp2 = translation.OfPoint(p)\r\n\t\treturn p2\r\ndef translate_curve(c,vector):\r\n\tpass\r\ndef rotate_point(p,angle = None,origin = None):\r\n\t\"\"\"angle: degree\"\"\"\r\n\tif origin == None:\r\n\t\torigin = XYZ()\r\n\tif angle == None:\r\n\t\tangle = 0\t\t\r\n\telse:\r\n\t\tangle = math.radians(angle)\r\n\tif p.__class__.__name__ == \"XYZ\" and origin.__class__.__name__ == \"XYZ\":\r\n\t\ttranslation = Transform.CreateRotationAtPoint(XYZ(0,0,1), angle,origin)\r\n\t\tp2 = translation.OfPoint(p)\r\n\t\treturn p2\r\n#-------------------------------------------------------#\r\ndataEnteringNode = IN\r\ndebugger = []\r\n\r\ndoc,uiapp,app = IN[0]\r\nopt = Options()\r\nview_name = IN[1]\r\n\r\nview = get_sheet_view_2 (view_name)\r\n\r\nOUT = draw_chart_column(view,origin = None,col_width = 5,col_height = [50,100,150],distance = 30,start_space = 10,col_head = ['Column1','Column2','Column3'])\r\n#draw_axis_xy(view,origin = XYZ(10/304.8,10/304.8,0),x_length = 10,y_length = 10,angle = 45, arrow_length = 3)",
+      "VariableInputPorts": true,
+      "Id": "c46757cfecb446f081d0fa24f30f6c88",
+      "Inputs": [
+        {
+          "Id": "d3161f516e5c4bf187a0263572121f93",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ee3ede1de58441a29c388b42f4212e13",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "61e8ab8d5dd64104a2ebb65c685d3e8c",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\n\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n#-------------------------------------------------------#\r\n\r\nOUT = doc,uiapp,app",
+      "VariableInputPorts": true,
+      "Id": "2e74496bffe04265a13d9b6632cc1f96",
+      "Inputs": [
+        {
+          "Id": "a75aeeef5fc444c8a999eac887ec88a1",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a350acfa0292445288215972f3ecdaa5",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "223cad4b37c74dc8a7004f9f914ca1bd",
+      "Inputs": [
+        {
+          "Id": "7925d06923e44ba7bb6c2dc8097c534b",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "d2131dc31e0d48e9a4015b4394005f75",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "14eaf5ec1cca46cdad5aea91392e4142",
+      "Inputs": [
+        {
+          "Id": "b41f3d0442c348e285b15b5e0452a909",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e7df5d26d2f34d559f63e5d5f953eb79",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "5381930328b34f74a4814bc0e422c963",
+      "End": "ee3ede1de58441a29c388b42f4212e13",
+      "Id": "117628260da64244b5c8175cd24e7f8a"
+    },
+    {
+      "Start": "61e8ab8d5dd64104a2ebb65c685d3e8c",
+      "End": "b41f3d0442c348e285b15b5e0452a909",
+      "Id": "7bfc629678e042fb96da99fa17012f29"
+    },
+    {
+      "Start": "a350acfa0292445288215972f3ecdaa5",
+      "End": "d3161f516e5c4bf187a0263572121f93",
+      "Id": "32bcbb1b21ad4934b033e06209bd6c35"
+    },
+    {
+      "Start": "a350acfa0292445288215972f3ecdaa5",
+      "End": "7925d06923e44ba7bb6c2dc8097c534b",
+      "Id": "20f3ba54d15049eea42f36526b954677"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "View name",
+        "Id": "03dc8fccc1f94b61849d7d74bacae034",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 193.0,
+        "Y": 159.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script_Draw Chart on Sheet View",
+        "Id": "c46757cfecb446f081d0fa24f30f6c88",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 416.3876427340781,
+        "Y": 273.97567453866179
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script-Revit Doc,App,UI",
+        "Id": "2e74496bffe04265a13d9b6632cc1f96",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 402.0,
+        "Y": 2.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "223cad4b37c74dc8a7004f9f914ca1bd",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 760.0,
+        "Y": -43.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "14eaf5ec1cca46cdad5aea91392e4142",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 761.0,
+        "Y": 188.0
+      }
+    ],
+    "Annotations": [],
+    "X": -88.596170870023,
+    "Y": 75.344108565292345,
+    "Zoom": 0.71259483262848833
+  }
+}

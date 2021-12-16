@@ -1,0 +1,240 @@
+{
+  "Uuid": "f9d205ef-4f89-4266-9a7d-d0711ae2c806",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Geometry-Join-211004",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\n#----------------------------------------------------------------#\r\ndef clean_joined_not_intersect(doc,JGU):\r\n\tglobal debugger\r\n\twarnings = list(doc.GetWarnings())\r\n\tfor w in warnings:\r\n\t\ttry:\r\n\t\t\tif w.GetDescriptionText() == \"Highlighted elements are joined but do not intersect.\":\r\n\t\t\t\tid_pairs = []\r\n\t\t\t\tid_pairs.append(list(w.GetFailingElements()))\t\t\r\n\t\t\t\t[JGU.UnjoinGeometry(doc,doc.GetElement(p[0]),doc.GetElement(p[1])) for p in id_pairs]\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(\"warnings:{0}\".format(ex))\r\n\t\t\tpass\r\n\r\ndef autojoin(doc,JGU,element,cates):\r\n\tglobal debugger,count,dic_rule,rule_cates,categories,categories_name,collector\r\n\t\r\n\tintersect_elements = []\r\n\tintersect_elements.extend([e for e in collector.WherePasses(ElementIntersectsElementFilter(element)) if e.Category.Name in cates])\r\n\t\r\n\tjoined_elements = []\r\n\tjoined_elements = [doc.GetElement(i) for i in JGU.GetJoinedElements(doc,element) if doc.GetElement(i).Category.Name in cates]\r\n\t\t\t\r\n\tflag_result = []\r\n\tif len(intersect_elements) > 0:\r\n\t\tall_joined = [False] * len(intersect_elements)\r\n\t\tdebugger.append(all_joined)\r\n\t\tdebugger.append(intersect_elements)\r\n\r\n\t\tfor ie in intersect_elements:\r\n\t\t\ttry:\r\n\t\t\t\tlist_check = dic_rule[element.Category.Name]\r\n\t\t\t\tdebugger.append([e for e in cates if not e in list_check])\r\n\t\t\t\tif ie.Category.Name in list_check:\r\n\t\t\t\t\tdebugger.append( ie.Category.Name in dic_rule[element.Category.Name])\r\n\t\t\t\t\t\"\"\"\"\"\"\r\n\t\t\t\t\tJGU.JoinGeometry(doc,element,ie)\r\n\t\t\t\telif ie.Category.Name in [e for e in cates if not e in list_check]:\r\n\t\t\t\t\t\"\"\"\"\"\"\r\n\t\t\t\t\tJGU.JoinGeometry(doc,ie,element)\r\n\t\t\t\telse:\r\n\t\t\t\t\tpass\r\n\t\t\texcept Exception as ex:\r\n\t\t\t\tdebugger.append(\"intersect_elements:{0}\".format(ex))\r\n\t\t\t\tpass\r\n\r\n\t\t\r\n\tfor je in joined_elements:\r\n\t\ttry:\r\n\t\t\tif je.Category.Name in dic_rule[element.Category.Name]:\r\n\t\t\t\tflag_result.append (True)\r\n\t\t\t\t# function Check whether A w B Join follow Rule\r\n\t\t\t\tis_correct_rule = JGU.IsCuttingElementInJoin(doc,element,je)\r\n\t\t\t\tif is_correct_rule == True:\r\n\t\t\t\t\tpass\r\n\t\t\t\telse:\r\n\t\t\t\t\tJGU.SwitchJoinOrder(doc,element,je)\r\n\t\t\telse:\r\n\t\t\t\tflag_result.append (False)\r\n\t\t\t\t# function Check whether A w B Join follow Rule --> Switch Joint ????????\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(\"joined_elements:{0}\".format(ex))\r\n\t\t\tpass\r\n\t\t\t\r\n\tcount += 1\t\r\n\t\r\n\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\n\r\n# The inputs to this node will be stored as a list in the IN variables.\r\ndataEnteringNode = IN\r\nelements = UnwrapElement(IN[0])\r\ncates = IN[1].splitlines()\r\n\r\nif not elements.__class__.__name__ == \"List[object]\":\r\n\telements = [elements]\r\n\r\ncate_name_copy = cates[:]\r\ndic_rule = {}\r\nwhile True:    \r\n    dic_rule[cate_name_copy[0]] = cate_name_copy[1:]\r\n    cate_name_copy.remove(cate_name_copy[0])\r\n    if len(cate_name_copy) == 1:\r\n        break\r\ncount = 0\r\n#start\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\n\r\nelements_sort = [e for cat in cates for e in elements if e.Category.Name == cat and e.Category.Name != cates[-1]]\r\ncollector = FilteredElementCollector(doc)\t\r\ncategories = list(doc.Settings.Categories)\r\ncategories_name = [cat.Name for cat in categories]\r\nrule_cates = [categories[categories_name.index(c)] for c in cates if c in categories_name]\r\n# clean\r\nclean_joined_not_intersect(doc,JGU)\r\n#process\r\nfor element in elements_sort:\r\n\ttry:\t\t\r\n\t\tautojoin(doc,JGU,element,cates)\t\t\r\n\texcept Exception as ex:\r\n\t\tdebugger.append(\"browse elements:{0}\".format(ex))\r\n\t\tpass\r\nTransactionManager.Instance.TransactionTaskDone()\r\n#end\r\ntime_end = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = elements_sort,dic_rule,\"{0}/{1} Succeeded\".format(count,len(elements)),time_start, time_end, debugger",
+      "VariableInputPorts": true,
+      "Id": "6667cfa07f3b472cb132114f5dc28865",
+      "Inputs": [
+        {
+          "Id": "74c76a751b354cd1a0a1a42cff225ea0",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "24a639e484314134b4d3d463c3db9480",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "956cd18cdbb24afb97497e8bc832120b",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "0c506e04-afd1-4310-9b3b-4f794fba0445-0005a5a2"
+      ],
+      "Id": "210aff11eb0e470bb29bdb12827662b0",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d2b9338aff694421b8f66a5408ec2a22",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "1. PER EACH (A) ELEMENT: FIND (1)INTERSECTED +(2) JOINED ELEMENTS OF  (A) --> list a\r\n2. BROWSE EACH ELEMENT (B) IN  list a: (2)WHETHER (A) JOIN (B) IN CORRECT RULE\r\n3. (2) IF TRUE: PASS\r\nIF FALSE: SWITCH JOIN (A) (B)\r\n4. (1) JOIN (A) (B) BY RULE",
+      "Id": "b81224d5a69b4936aa3d94f96d42552e",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2074e863ed14459885726084baeb8dd7",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Columns\r\nStructural Framing\r\nFloors",
+      "Id": "2bbcad7aee7d486f8749f6e1d0f50063",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "41fb070610c1477aa6b3e16bc74116d3",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "61f2b62b5cf44bccb0739ee2cb689bc4",
+      "Inputs": [
+        {
+          "Id": "cd1555a6126c4480ab0af48b6829303a",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "3b1e528bbba84794abcfb8e167fe47ac",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "956cd18cdbb24afb97497e8bc832120b",
+      "End": "cd1555a6126c4480ab0af48b6829303a",
+      "Id": "c2596885541e464aa7be82c53576fdf3"
+    },
+    {
+      "Start": "d2b9338aff694421b8f66a5408ec2a22",
+      "End": "74c76a751b354cd1a0a1a42cff225ea0",
+      "Id": "2e7b2607d5104fa8bdf23a44018a68b9"
+    },
+    {
+      "Start": "41fb070610c1477aa6b3e16bc74116d3",
+      "End": "24a639e484314134b4d3d463c3db9480",
+      "Id": "be2fa761d0b04b1b82f0258a63ca466d"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "6667cfa07f3b472cb132114f5dc28865",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 405.47302797571496,
+        "Y": 306.8400783942792
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "210aff11eb0e470bb29bdb12827662b0",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 9.0006351969722687,
+        "Y": 105.85864087850098
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Program Script",
+        "Id": "b81224d5a69b4936aa3d94f96d42552e",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 32.207138621077348,
+        "Y": 526.93480453815221
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Join Rule",
+        "Id": "2bbcad7aee7d486f8749f6e1d0f50063",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 85.841437644988986,
+        "Y": 384.414013055523
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "61f2b62b5cf44bccb0739ee2cb689bc4",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 725.50661283380816,
+        "Y": 269.09723615195668
+      }
+    ],
+    "Annotations": [],
+    "X": 28.881232422619405,
+    "Y": -92.571234014259971,
+    "Zoom": 0.89541698483286714
+  }
+}

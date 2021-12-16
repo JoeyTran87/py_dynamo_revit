@@ -1,0 +1,227 @@
+{
+  "Uuid": "3c9d0464-8643-5ffe-96e5-ab1769818209",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "revit_info_to_json-(Category Elements)-211001",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "7b7c8e1aeafe4a748c198fe3781c85c6",
+      "Name": "List Category",
+      "Type": "string",
+      "Value": "Structural Framing\r\nFloors",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "6378dd0277dc495ca25a6b142cd0b0ee",
+      "Name": "Help",
+      "Type": "string",
+      "Value": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nCurtain Panels\r\nRoofs",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Framing\r\nFloors",
+      "Id": "7b7c8e1aeafe4a748c198fe3781c85c6",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "98d364cacbaa43faa6d1d3994178fe8b",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport os, sys, json,clr, tempfile,shutil\r\nfrom shutil import copyfile\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\n\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\n\r\nimport time\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\n#----------------------------------------------------------------#\r\ncates = IN[0].splitlines()\r\n\r\ndef setupUnit(doc):\t\r\n\ttry:\r\n\t\t#Area\r\n\t\tunit = Units(UnitSystem.Metric)\t\t\r\n\t\tfmOp = FormatOptions(DisplayUnitType.DUT_SQUARE_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Area,fmOp)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#Volume\r\n\t\tunit1 = Units(UnitSystem.Metric)\t\r\n\t\tfmOp1 = FormatOptions(DisplayUnitType.DUT_CUBIC_METERS,UnitSymbolType.UST_NONE,0.001)\t\t\r\n\t\tunit.SetFormatOptions(UnitType.UT_Volume,fmOp1)\t\t\r\n\t\tdoc.SetUnits(unit)\r\n\t\t#doc.GetUnits().SetFormatOptions(UnitType.UT_Area,fmOp)\r\n\texcept Exception as ex:\r\n\t\tpass\r\n\r\ndef getAllElementsOfCategories(doc,cates):\r\n\tglobal debugger\r\n\tcategories = list(doc.Settings.Categories)\r\n\tcategory_names = [c.Name for c in categories]\r\n\telements = []\r\n\tfor cat in cates:\r\n\t\ttry:\r\n\t\t\tif cat in category_names:\r\n\t\t\t\tc = categories[int(category_names.index(cat))]\t\t\t\t\r\n\t\t\t\telements.extend( [e for e in FilteredElementCollector(doc).OfCategoryId(c.Id).WhereElementIsNotElementType().ToElements()])\r\n\t\texcept Exception as ex:\r\n\t\t\tdebugger.append(ex)\r\n\t\t\tpass\r\n\treturn elements\r\n\r\ndef getAllCategoryElementsInfoDictionary(doc,cates):\r\n\tglobal debugger\r\n\tres = []\r\n\telems = getAllElementsOfCategories(doc,cates)\r\n\tfor e in elems:\r\n\t\ttry:\r\n\t\t\tres.append(getPropertiesDic(doc,e))\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn res\r\n\r\ndef getPropertiesDic(doc,e): # dictionary type for write JSON\r\n\tdic = {}\r\n\tif e:\t\t\r\n\t\tparams = e.Parameters\t\t\t\r\n\t\tdic['UniqueId'] = e.UniqueId\r\n\t\tif doc.GetElement(e.GetTypeId()):\r\n\t\t\tdic['TypeUniqueId'] = doc.GetElement(e.GetTypeId()).UniqueId\r\n\t\t\t# dic['TypeProperties'] = getTypePropertiesDic (e,doc)\r\n\t\t\ttDic = getTypePropertiesDic (doc,e)\r\n\t\t\tfor td in tDic:\r\n\t\t\t\tdic[td] = tDic.get(td)\r\n\t\telse:\r\n\t\t\tdic['TypeUniqueId'] = \"NoneType\"\r\n\t\t\tdic['TypeProperties'] = \"NoneTypeProperties\"\r\n\t\tfor p in params:\t\r\n\t\t\ttry:\t\r\n\t\t\t\tif p.StorageType == StorageType.String:\r\n\t\t\t\t\tif p.AsString():\r\n\t\t\t\t\t\tv = p.AsString()\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\telse:\r\n\t\t\t\t\tif p.StorageType == StorageType.Double:\r\n\t\t\t\t\t\tif p.AsValueString():\t\t\t\t\t\r\n\t\t\t\t\t\t\tif p.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or p.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n\t\t\t\t\t\t\t\tv = float(p.AsDouble())\r\n\t\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\t\tv = float(p.AsValueString())\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\tif p.StorageType == StorageType.ElementId:\r\n\t\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\t\r\n\t\t\t\t\tif p.StorageType == StorageType.Integer:\r\n\t\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tv = p.AsInteger()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\t\tdic[n] = v\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\treturn dic\r\n\r\ndef getTypePropertiesDic (doc,e): # dictionary type for write JSON\r\n\tparams = doc.GetElement(e.GetTypeId()).Parameters\r\n\tdic = {}\r\n\t#dic['TypeUniqueId'] = doc.GetElement(e.GetTypeId()).UniqueId\r\n\tfor p in params:\t\r\n\t\ttry:\t\r\n\t\t\tif p.StorageType == StorageType.String:\r\n\t\t\t\tif p.AsString():\r\n\t\t\t\t\tv = p.AsString()\r\n\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\tdic[n] = v\r\n\t\t\telse:\r\n\t\t\t\tif p.StorageType == StorageType.Double:\r\n\t\t\t\t\tif p.AsValueString():\t\t\t\t\t\r\n\t\t\t\t\t\tif p.DisplayUnitType == DisplayUnitType.DUT_DECIMAL_DEGREES or p.DisplayUnitType == DisplayUnitType.DUT_SLOPE_DEGREES:\r\n\t\t\t\t\t\t\tv = float(p.AsDouble())\t\t\t\t\t\t\r\n\t\t\t\t\t\telse:\r\n\t\t\t\t\t\t\tv = float(p.AsValueString())\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\tif p.StorageType == StorageType.ElementId:\r\n\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\t\r\n\t\t\t\tif p.StorageType == StorageType.Integer:\r\n\t\t\t\t\tif p.AsValueString():\r\n\t\t\t\t\t\tv = p.AsValueString()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\t\t\t\telse:\r\n\t\t\t\t\t\tv = p.AsInteger()\t\t\t\t\t\t\t\t\r\n\t\t\t\t\t\tn = p.Definition.Name\r\n\t\t\t\t\t\tdic[n] = v\r\n\t\texcept:\r\n\t\t\tpass\r\n\treturn dic\r\ndef revitDir(doc):\r\n\tdir = \"\"\r\n\ttry:\r\n\t\tp = doc.PathName.split(\"\\\\\")\r\n\t\tpp = p[0:len(p)-1]\r\n\t\r\n\t\tfor s in pp:\r\n\t\t\tdir += s + \"\\\\\"\r\n\texcept:\r\n\t\tpass\r\n\treturn dir,doc.PathName.split(\"\\\\\")[-1].split(\".rvt\")[0]\r\n\r\ndef jsonString(data): # cho trường hợp bị lỗi JSON acsii encoder \\u1111\t\r\n\tres = \"\"\r\n\tfmr = \"{0}{1}{2}\"\r\n\tres2 = \"\"\r\n\tres3=[]\r\n\ttry:\r\n\t\tfor dat in data:\r\n\t\t\ttry:\r\n\t\t\t\tdicStr = \"\"\r\n\t\t\t\tfm = \"{0}{1}{2}{3}{4}{5}{6}\"\t\r\n\t\t\t\t#fm.format(\"{\",\"123\",\"}\")\t\r\n\t\t\t\tfor d in dat:\r\n\t\t\t\t\ttry:\r\n\t\t\t\t\t\t#res.append(type(dat.get(d)).__name__)#(dumps(d, indent = 2,sort_keys = True,ensure_ascii = True))\r\n\t\t\t\t\t\ttn = type(dat.get(d)).__name__\r\n\t\t\t\t\t\tif tn == \"str\":\r\n\t\t\t\t\t\t\tdicStr += fm.format(\"\\\"\",d,\"\\\"\",\":\",\"\\\"\",dat.get(d),\"\\\"\")+\",\"\r\n\t\t\t\t\t\tif tn ==\"float\":\r\n\t\t\t\t\t\t\tdicStr += fm.format(\"\\\"\",d,\"\\\"\",\":\",\"\",dat.get(d),\"\")+\",\"\r\n\t\t\t\t\texcept Exception as ex:\r\n\t\t\t\t\t\tres3.append(ex)\r\n\t\t\t\t\t\tpass\r\n\t\t\t\tres += fmr.format(\"{\",dicStr[:-1],\"}\") +\",\"\t\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\tres2 = fmr.format(\"[\",res[:-1],\"\")+\"]\"\r\n\texcept:\r\n\t\tpass\r\n\treturn res2\r\ndef getTempFilePath(fileName):\r\n\ttempDir = tempfile.gettempdir()\r\n\ttempFP = tempDir + fileName\r\n\treturn tempFP\r\n\r\ndef writeTxtStringToFile(tempFP,path,exDat): #from txt string\r\n\t\"\"\"WRITE \"ONE_LINE\" DATA TO TEMP TXT FILE THEN COPY TO TARGET PATH\"\"\"\r\n\twith open(tempFP,\"w\") as f:\r\n\t\tf.write(exDat.encode('utf8'))\r\n\tcopyfile(tempFP, path)\t\r\n\treturn \"Succeeded\"\r\n\r\n#----------------------------------------------------------------#\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n#----------------------------------------------------------------#\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nsetupUnit(doc)\r\nTransactionManager.Instance.TransactionTaskDone()\r\n#----------------------------------------------------------------#\r\ntry:\r\n\tdata = getAllCategoryElementsInfoDictionary(doc,cates)\r\n\tdataStr = jsonString(data)\r\n\tpath = revitDir(doc)[0]+revitDir(doc)[1]+'.json'\r\n\tfileName = revitDir(doc)[1]+'.json'\r\n\ttempfilepath = getTempFilePath(fileName)\r\n\tfilepath = revitDir(doc)[0]+revitDir(doc)[1]+'.json'\r\n\r\n\twriteTxtStringToFile(tempfilepath,filepath,dataStr)\r\n\r\n\ttime_end= time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\tOUT = \"Succeeded\",time_start,time_end ,debugger# cates,getAllElementsOfCategories(cates, doc),debugger,\r\n\r\nexcept Exception as ex:\r\n\tdebugger.append(ex)\r\n\ttime_end= time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\tOUT = \"Fail\",time_start,time_end, debugger\r\n\r\n\r\n",
+      "VariableInputPorts": true,
+      "Id": "5f256a5cded5435eb30f8f20c13570a7",
+      "Inputs": [
+        {
+          "Id": "599e12d5f7014d8481e020b810d3a79d",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0384a2d1234e41b4aeb0279a4123ee4c",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Structural Foundations\r\nStructural Framing\r\nStructural Columns\r\nWalls\r\nFloors\r\nStairs\r\nParts\r\nGeneric Models\r\nCurtain Panels\r\nRoofs",
+      "Id": "6378dd0277dc495ca25a6b142cd0b0ee",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8354543443f74462b3576de2807551b5",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "f3b10e21469b4486b3c169a70808dd87",
+      "Inputs": [
+        {
+          "Id": "4fcc96c31900415884c48e4877e21ed2",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "db25c21a5f724b70856e33f5bd5ff6c5",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "98d364cacbaa43faa6d1d3994178fe8b",
+      "End": "599e12d5f7014d8481e020b810d3a79d",
+      "Id": "36b1d4637b1848c197cfb70851077aa4"
+    },
+    {
+      "Start": "0384a2d1234e41b4aeb0279a4123ee4c",
+      "End": "4fcc96c31900415884c48e4877e21ed2",
+      "Id": "de23f2bd76e041f191358099b6ce8583"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "List Category",
+        "Id": "7b7c8e1aeafe4a748c198fe3781c85c6",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -547.523185414964,
+        "Y": 611.42656229493775
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script- Get",
+        "Id": "5f256a5cded5435eb30f8f20c13570a7",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -257.72168938595792,
+        "Y": 657.227679274068
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Help",
+        "Id": "6378dd0277dc495ca25a6b142cd0b0ee",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -559.5258681448247,
+        "Y": 747.16808621875884
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "f3b10e21469b4486b3c169a70808dd87",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -23.646104613140437,
+        "Y": 632.992539936959
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "767d6917810b4a0f9f2a35c8cbde9601",
+        "Title": "",
+        "Nodes": [
+          "7b7c8e1aeafe4a748c198fe3781c85c6"
+        ],
+        "Left": -557.523185414964,
+        "Top": 558.42656229493775,
+        "Width": 155.0,
+        "Height": 136.0,
+        "FontSize": 36.0,
+        "InitialTop": 611.42656229493775,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FF48B9FF"
+      }
+    ],
+    "X": 516.46497526305075,
+    "Y": -344.95371387629564,
+    "Zoom": 0.82735849432533159
+  }
+}

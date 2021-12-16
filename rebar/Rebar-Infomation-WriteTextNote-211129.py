@@ -239,7 +239,6 @@ uiapp = DocumentManager.Instance.CurrentUIApplication
 app = uiapp.Application
 opt = Options()
 #-------------------------------------------------------#
-dataEnteringNode = IN
 view_name = IN[0]
 data = dictionary_to_dict(IN[1])
 rb_data = IN[2][1:]

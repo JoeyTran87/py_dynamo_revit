@@ -1,0 +1,318 @@
+{
+  "Uuid": "2dc5312b-96ba-4aae-bc06-ce0fb75abef7",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Parameter_replace_value_string-Select Elements)-211005",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "0767c4939d7645388be612e064b2becf",
+      "Name": "Value Replaced",
+      "Type": "string",
+      "Value": "S-",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "94af20ae05254c81a9aeef2113630643",
+      "Name": "Replace value",
+      "Type": "string",
+      "Value": "",
+      "Description": "Creates a string."
+    },
+    {
+      "Id": "536e5f1e71dd4584b5e40bac62b655b3",
+      "Name": "Parameter (String)",
+      "Type": "string",
+      "Value": "COF_CON__WorkItemNumber",
+      "Description": "Creates a string."
+    }
+  ],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Load the Python Standard and DesignScript Libraries\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nclr.AddReference('RevitAPI')\r\nfrom Autodesk.Revit.DB import *\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import TaskDialog\r\nclr.AddReference(\"RevitNodes\")\r\nimport Revit\r\nclr.ImportExtensions(Revit.Elements)\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\nfrom System.Collections.Generic import *\r\nimport Autodesk.Revit.DB.JoinGeometryUtils as JGU\r\nimport time\r\n\r\n#----------------------------------------------------------------#\r\ntime_start = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\ndebugger = []\r\ncout_succeed = 0\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\napp = uiapp.Application\r\nopt = Options()\r\n\r\nelements = UnwrapElement(IN[0])\r\nparam_name = IN[1]\r\nvalue_search = IN[2]\r\nvalue_replace = IN[3]\r\n\r\nTransactionManager.Instance.EnsureInTransaction(doc)\r\nfor e in elements:\r\n    try:\r\n        param = e.LookupParameter(param_name)\r\n        if param.StorageType == StorageType.String:\r\n            value_string = param.AsString()\r\n            value_string = value_string.replace(value_search,value_replace)\r\n            param.Set(value_string)\r\n            cout_succeed += 1\r\n    except Exception as ex:\r\n        debugger.append(\"Exception in iterating elements : {}\".format(ex))\r\n\r\n\r\nTransactionManager.Instance.TransactionTaskDone()\r\ntime_end = time.strftime(\"%y%m%d %H:%M:%S\",time.localtime(time.time()))\r\n\r\nOUT = \"{0}/{1} Succeeded\".format(cout_succeed,len(elements)),time_start, time_end, debugger",
+      "VariableInputPorts": true,
+      "Id": "92acb7643aa748cb97d8e2b7cef5b73e",
+      "Inputs": [
+        {
+          "Id": "896e70367d3c4cafac50af45efacd252",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e23a164e59074c319100a60cbea29de4",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7ac2959b6b004a2fba7658e66add7f26",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ede70c128f274d788ad3907030579e11",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e4bf506e715249548b7cefe3c67fd0a7",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded IronPython script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "S-",
+      "Id": "0767c4939d7645388be612e064b2becf",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8f263e0fed18475c906a466156b9d218",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "",
+      "Id": "94af20ae05254c81a9aeef2113630643",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9a615215ef96487b96939fabb1cf72c8",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "COF_CON__WorkItemNumber",
+      "Id": "536e5f1e71dd4584b5e40bac62b655b3",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "e83fa3467557492d84607ac53a378a3b",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "7c7c0071ae34433a8c6fa722445ed639",
+      "Inputs": [
+        {
+          "Id": "ab7332dc01a545a7bb6de01c9ac36d32",
+          "Name": "",
+          "Description": "Node to evaluate.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "7c5ec69611114b8384760f845cae9b0d",
+          "Name": "",
+          "Description": "Watch contents.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the output of node."
+    },
+    {
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [],
+      "Id": "93b86745a6f1484f955c65d1e5dfbfcf",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "70ba7874fa894d2fb06bc166211cb0d1",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "e4bf506e715249548b7cefe3c67fd0a7",
+      "End": "ab7332dc01a545a7bb6de01c9ac36d32",
+      "Id": "ba9a8a6d979e40e39d69624496b6a25a"
+    },
+    {
+      "Start": "8f263e0fed18475c906a466156b9d218",
+      "End": "7ac2959b6b004a2fba7658e66add7f26",
+      "Id": "5cdef117539b489c8211963f4af7805a"
+    },
+    {
+      "Start": "9a615215ef96487b96939fabb1cf72c8",
+      "End": "ede70c128f274d788ad3907030579e11",
+      "Id": "0a8cc31330e24a0d8349345b37a888e7"
+    },
+    {
+      "Start": "e83fa3467557492d84607ac53a378a3b",
+      "End": "e23a164e59074c319100a60cbea29de4",
+      "Id": "70e86c44200847858ebe7419f8539e47"
+    },
+    {
+      "Start": "70ba7874fa894d2fb06bc166211cb0d1",
+      "End": "896e70367d3c4cafac50af45efacd252",
+      "Id": "2233bede87544d1c8694ec5d567353c4"
+    }
+  ],
+  "Dependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.1.0.7500",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "92acb7643aa748cb97d8e2b7cef5b73e",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 396.0,
+        "Y": 233.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Value Replaced",
+        "Id": "0767c4939d7645388be612e064b2becf",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 144.0,
+        "Y": 372.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Replace value",
+        "Id": "94af20ae05254c81a9aeef2113630643",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 153.0,
+        "Y": 473.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Parameter (String)",
+        "Id": "536e5f1e71dd4584b5e40bac62b655b3",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 141.0,
+        "Y": 278.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "7c7c0071ae34433a8c6fa722445ed639",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 583.0,
+        "Y": 199.0
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Select Model Elements",
+        "Id": "93b86745a6f1484f955c65d1e5dfbfcf",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 59.104741098386455,
+        "Y": 67.836168062438219
+      }
+    ],
+    "Annotations": [],
+    "X": 139.68597696126452,
+    "Y": -65.519550901436958,
+    "Zoom": 1.0542982150113263
+  }
+}
