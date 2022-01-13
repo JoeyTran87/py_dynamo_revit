@@ -25,13 +25,13 @@ clr.AddReference("Microsoft.Office.Interop.Excel")
 import Microsoft.Office.Interop.Excel as Excel
 #-------------------------------------------------------#
 def get_sheet_view_by_search_string(search_string):
-    global doc    
-    viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))
-    try:
-	    view_  = [v for v in viewCollector if search_string in v.Name][0]
-	    return view_
-    except:
-    	return
+	global doc    
+	viewCollector = list(FilteredElementCollector(doc).OfClass(ViewSheet))
+	try:
+		view_  = [v for v in viewCollector if search_string in v.Name][0]
+		return view_
+	except:
+		return
 
 def get_sheet_view (view_name):
 	""""""
