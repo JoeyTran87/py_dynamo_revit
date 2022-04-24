@@ -413,7 +413,7 @@ def jsonString(data): # cho trường hợp bị lỗi JSON acsii encoder \u1111
 							dicStr += fm.format("\"",d,"\"",":","\"",dat.get(d),"\"")+","
 						if tn =="float":
 							dicStr += fm.format("\"",d,"\"",":","",dat.get(d),"")+","
-					except Exception, ex:
+					except Exception as ex:
 						res3.append(ex)
 						pass
 				res += fmr.format("{",dicStr[:-1],"}") +","	
@@ -648,7 +648,7 @@ def getSolids(e):
 				for s in geoObj:
 					if isinstance(s,Solid) and s.Volume > 0:
 						solid.Add(s)	
-	except Exceptyion, ex:
+	except Exception as ex:
 		mergedSolid.append(ex)
 		pass	
 	return solid
@@ -748,10 +748,10 @@ def createMultiParameter(doc,paraDefs,cates, paramGroup,prefix):
 				try:
 					if cat[1].Name == cate:
 						catset.Insert(cat[1])
-				except Exception, ex:
+				except Exception as ex:
 					res.append(ex)
 					pass
-		except Exception, ex:
+		except Exception as ex:
 			res.append(ex)
 			pass
 	with Transaction(doc,"Add Parameter") as t:
@@ -764,7 +764,7 @@ def createMultiParameter(doc,paraDefs,cates, paramGroup,prefix):
 					#update by ReInsert
 					doc.ParameterBindings.ReInsert(de,newIB,pg)
 					count += 1
-			except Exception, ex:
+			except Exception as ex:
 				res.append(ex)
 				pass
 		t.Commit()
@@ -944,7 +944,7 @@ def setParameterValue(doc,elements,paramName,paramValue):
 				param = elem.LookupParameter(paramName)
 				param.Set(paramValue)
 				count += 1
-			except Exception, ex:
+			except Exception as ex:
 				res.append(ex)
 				pass
 		res.append(count)
@@ -961,7 +961,7 @@ def setParameterUniqueId(doc,elements,paramName):
 				param = e.LookupParameter(paramName)
 				param.Set(e.UniqueId)
 				count += 1			
-			except Exception, ex:
+			except Exception as ex:
 				res.append(ex)
 				pass
 		res.append(count)
